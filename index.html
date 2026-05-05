@@ -1,446 +1,179 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Lautstärke Zuordnung</title>
+<meta charset="UTF-8">
+<title>Arteriosklerose – realistisch</title>
 <style>
-  :root{
-    --bg:#f6f8fb;
-    --card:#ffffff;
-    --accent:#2b7cff;
-    --success:#28a745;
-    --danger:#dc3545;
-    --muted:#6b7280;
-  }
-  body{
-    font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-    background: linear-gradient(180deg,#eef3ff 0%,var(--bg) 100%);
-    margin:0;
-    padding:32px;
-    color:#0f172a;
-  }
-  h1{font-size:1.4rem;margin:0 0 8px}
-  p{margin:0 0 18px;color:var(--muted)}
-  .container{display:flex;gap:24px;align-items:flex-start;max-width:1000px;margin:0 auto}
-  .left,.right{background:var(--card);border-radius:12px;padding:18px;box-shadow:0 6px 18px rgba(15,23,42,0.06)}
-  .left{flex:1;min-width:320px}
-  .right{width:320px}
-  .items{display:grid;grid-template-columns:1fr;gap:12px}
-  .draggable{
-    display:flex;gap:12px;align-items:center;padding:10px;border-radius:10px;border:1px solid #e6eefc;background:linear-gradient(180deg,#fff,#fbfdff);
-    cursor:grab;
-  }
-  .draggable:active{cursor:grabbing}
-  .draggable img{width:64px;height:64px;flex:0 0 64px;border-radius:8px}
-  .label{font-weight:600}
-  .sub{font-size:0.9rem;color:var(--muted)}
-  .drop-list{display:flex;flex-direction:column;gap:12px}
-  .drop{
-    display:flex;justify-content:space-between;align-items:center;padding:12px;border-radius:10px;border:2px dashed #dbeafe;background:#fbfdff;min-height:64px;
-    transition:background .18s,border-color .18s,box-shadow .18s;
-  }
-  .drop.over{background:#eef7ff;border-color:var(--accent);box-shadow:0 6px 18px rgba(43,124,255,0.08)}
-  .drop.correct{background:linear-gradient(90deg,#e6ffef,#f0fff6);border-color:var(--success);box-shadow:0 6px 18px rgba(40,167,69,0.06)}
-  .drop.wrong{background:linear-gradient(90deg,#fff0f0,#fff6f6);border-color:var(--danger)}
-  .drop .slot{min-width:160px;text-align:right;font-weight:700}
-  .controls{display:flex;gap:8px;margin-top:14px}
-  button{background:var(--accent);color:#fff;border:0;padding:10px 14px;border-radius:8px;font-weight:600;cursor:pointer}
-  button.secondary{background:#fff;color:var(--accent);border:1px solid #dbeafe}
-  .hint{margin-top:12px;color:var(--muted);font-size:0.95rem}
-  footer{margin-top:18px;color:var(--muted);font-size:0.85rem}
-  /* small screens */
-  @media (max-width:880px){
-    .container{flex-direction:column}
-    .right{width:100%}
-  }
+body { margin:0; background:#111; }
+canvas { display:block; margin:auto; background:#111; }
 </style>
 </head>
 <body>
-  <h1>Lautstärke Zuordnung</h1>
-  <p>Ziehe die Bilder links auf die passende Lautstärke rechts (dB). Klicke auf <strong>Prüfen</strong>, um die Lösung zu sehen. Bei richtiger Zuordnung leuchtet das Feld grün und ein Ton erklingt.</p>
 
-  <div class="container">
-    <div class="left">
-      <div class="items" id="items">
-        <!-- Draggable items with inline SVG images (dB-Angaben entfernt) -->
-        <div class="draggable" draggable="true" data-key="staubsauger" id="item-staubsauger" aria-grabbed="false" role="button" tabindex="0">
-          <!-- Staubsauger SVG -->
-          <img alt="Staubsauger" src="data:image/svg+xml;utf8,
-            <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'>
-              <rect width='64' height='64' rx='10' fill='%23ffffff'/>
-              <g transform='translate(6,8)'>
-                <rect x='0' y='18' width='36' height='10' rx='3' fill='%23f3f4f6'/>
-                <rect x='28' y='0' width='8' height='28' rx='3' fill='%23c7d2fe'/>
-                <circle cx='6' cy='34' r='6' fill='%23cbd5e1'/>
-                <circle cx='30' cy='34' r='6' fill='%239aa7b8'/>
-                <path d='M2 18 L18 6' stroke='%230f172a' stroke-width='2' stroke-linecap='round' fill='none'/>
-              </g>
-            </svg>" />
-          <div>
-            <div class="label">Staubsauger</div>
-          </div>
-        </div>
-
-        <div class="draggable" draggable="true" data-key="rockkonzert" id="item-rockkonzert" aria-grabbed="false" role="button" tabindex="0">
-          <!-- Rockkonzert SVG -->
-          <img alt="Rockkonzert" src="data:image/svg+xml;utf8,
-            <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'>
-              <rect width='64' height='64' rx='10' fill='%23fff'/>
-              <g transform='translate(6,6)'>
-                <rect x='0' y='28' width='44' height='6' rx='2' fill='%230b1220'/>
-                <rect x='6' y='6' width='8' height='22' rx='2' fill='%23ffb020'/>
-                <rect x='18' y='2' width='8' height='26' rx='2' fill='%23ff6b6b'/>
-                <rect x='30' y='8' width='8' height='20' rx='2' fill='%232b7cff'/>
-                <circle cx='36' cy='10' r='6' fill='%23ffd166'/>
-              </g>
-            </svg>" />
-          <div>
-            <div class="label">Rockkonzert</div>
-          </div>
-        </div>
-
-        <div class="draggable" draggable="true" data-key="gespraech" id="item-gespraech" aria-grabbed="false" role="button" tabindex="0">
-          <!-- Normales Gespräch SVG -->
-          <img alt="Normales Gespräch" src="data:image/svg+xml;utf8,
-            <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'>
-              <rect width='64' height='64' rx='10' fill='%23fff'/>
-              <g transform='translate(8,8)'>
-                <rect x='0' y='6' width='36' height='18' rx='6' fill='%23e6f0ff'/>
-                <circle cx='8' cy='15' r='3' fill='%230f172a'/>
-                <circle cx='18' cy='15' r='3' fill='%230f172a'/>
-                <circle cx='28' cy='15' r='3' fill='%230f172a'/>
-                <path d='M4 26 L12 34' stroke='%230f172a' stroke-width='2' stroke-linecap='round' fill='none'/>
-              </g>
-            </svg>" />
-          <div>
-            <div class="label">Normales Gespräch</div>
-          </div>
-        </div>
-
-        <div class="draggable" draggable="true" data-key="fluestern" id="item-fluestern" aria-grabbed="false" role="button" tabindex="0">
-          <!-- Flüstern SVG -->
-          <img alt="Flüstern" src="data:image/svg+xml;utf8,
-            <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'>
-              <rect width='64' height='64' rx='10' fill='%23fff'/>
-              <g transform='translate(10,10)'>
-                <ellipse cx='12' cy='12' rx='12' ry='8' fill='%23f8fafc'/>
-                <path d='M2 12 Q12 2 22 12' stroke='%230f172a' stroke-width='1.5' fill='none'/>
-                <circle cx='4' cy='18' r='2' fill='%230f172a'/>
-              </g>
-            </svg>" />
-          <div>
-            <div class="label">Flüstern</div>
-          </div>
-        </div>
-
-        <div class="draggable" draggable="true" data-key="rasenmaeher" id="item-rasenmaeher" aria-grabbed="false" role="button" tabindex="0">
-          <!-- Rasenmäher SVG -->
-          <img alt="Rasenmäher" src="data:image/svg+xml;utf8,
-            <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'>
-              <rect width='64' height='64' rx='10' fill='%23fff'/>
-              <g transform='translate(6,8)'>
-                <rect x='0' y='18' width='36' height='10' rx='3' fill='%23d1fae5'/>
-                <rect x='2' y='8' width='28' height='12' rx='3' fill='%232b7cff'/>
-                <circle cx='8' cy='34' r='6' fill='%239aa7b8'/>
-                <circle cx='28' cy='34' r='6' fill='%239aa7b8'/>
-                <path d='M30 8 L40 0' stroke='%230f172a' stroke-width='2' stroke-linecap='round' fill='none'/>
-              </g>
-            </svg>" />
-          <div>
-            <div class="label">Rasenmäher</div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <div class="right">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <div>
-          <strong>Rechts: Lautstärke (dB)</strong>
-          <div class="sub">Ziehe ein Bild auf das passende Feld</div>
-        </div>
-        <div class="controls">
-          <button id="checkBtn">Prüfen</button>
-          <button class="secondary" id="resetBtn">Zurücksetzen</button>
-        </div>
-      </div>
-
-      <div class="drop-list" id="drops">
-        <!-- Drop targets with expected keys -->
-        <div class="drop" data-accept="fluestern" id="drop-30" aria-dropeffect="none">
-          <div>30 dB</div>
-          <div class="slot" id="slot-30">—</div>
-        </div>
-
-        <div class="drop" data-accept="gespraech" id="drop-60" aria-dropeffect="none">
-          <div>60 dB</div>
-          <div class="slot" id="slot-60">—</div>
-        </div>
-
-        <div class="drop" data-accept="staubsauger" id="drop-70" aria-dropeffect="none">
-          <div>70 dB</div>
-          <div class="slot" id="slot-70">—</div>
-        </div>
-
-        <div class="drop" data-accept="rasenmaeher" id="drop-90" aria-dropeffect="none">
-          <div>90 dB</div>
-          <div class="slot" id="slot-90">—</div>
-        </div>
-
-        <div class="drop" data-accept="rockkonzert" id="drop-110" aria-dropeffect="none">
-          <div>110 dB</div>
-          <div class="slot" id="slot-110">—</div>
-        </div>
-      </div>
-
-      <div class="hint">Tipp: Ziehe ein Bild auf ein Feld und lasse los. Du kannst es wieder zurückziehen.</div>
-      <footer>Wenn alle Felder korrekt sind, leuchten sie grün und ein Ton erklingt.</footer>
-    </div>
-  </div>
+<canvas id="c" width="1100" height="420"></canvas>
 
 <script>
-  // Mapping of items to correct drop IDs
-  const correctMap = {
-    'fluestern': 'drop-30',
-    'gespraech': 'drop-60',
-    'staubsauger': 'drop-70',
-    'rasenmaeher': 'drop-90',
-    'rockkonzert': 'drop-110'
-  };
+const c = document.getElementById("c");
+const ctx = c.getContext("2d");
 
-  // State: which item is placed where
-  const placed = {}; // dropId -> itemId
+let time = 0;
+let particles = [];
 
-  // Drag and drop handlers
-  const draggables = document.querySelectorAll('.draggable');
-  draggables.forEach(el => {
-    el.addEventListener('dragstart', dragStart);
-    el.addEventListener('keydown', keyboardStart);
-    el.addEventListener('dragend', dragEnd);
-  });
+// Plaque-Formen (zeigen INS Gefäß)
+const plaqueTop = {cx:550, cy:175, rx:100, ry:40};   // oben
+const plaqueBottom = {cx:550, cy:265, rx:100, ry:40}; // unten
 
-  const drops = document.querySelectorAll('.drop');
-  drops.forEach(d => {
-    d.addEventListener('dragover', dragOver);
-    d.addEventListener('dragenter', dragEnter);
-    d.addEventListener('dragleave', dragLeave);
-    d.addEventListener('drop', drop);
-  });
-
-  function dragStart(e){
-    e.dataTransfer.setData('text/plain', this.id);
-    this.classList.add('dragging');
-    this.setAttribute('aria-grabbed','true');
-  }
-  function keyboardStart(e){
-    // allow Enter/Space to pick up and then use focus to drop
-    if(e.key === 'Enter' || e.key === ' '){
-      e.preventDefault();
-      this.setAttribute('aria-grabbed','true');
-      this.classList.add('dragging');
-      // store in session for keyboard drop
-      sessionStorage.setItem('kb-drag', this.id);
-      alert('Element ausgewählt. Fokussiere ein Ziel und drücke Enter, um abzulegen.');
+// ---------------- PARTICLES ----------------
+function initParticles() {
+    for (let i = 0; i < 160; i++) {
+        particles.push({x:50+Math.random()*250, y:180+Math.random()*70, zone:"left"});
+        particles.push({x:425+Math.random()*250, y:180+Math.random()*70, zone:"middle"});
+        particles.push({x:800+Math.random()*250, y:180+Math.random()*70, zone:"right"});
     }
-  }
-  function dragEnd(e){
-    this.classList.remove('dragging');
-    this.setAttribute('aria-grabbed','false');
-  }
+}
+initParticles();
 
-  function dragOver(e){ e.preventDefault(); }
-  function dragEnter(e){ this.classList.add('over'); }
-  function dragLeave(e){ this.classList.remove('over'); }
+// ---------------- TUBE ----------------
+function drawTube(x) {
+    let grad = ctx.createLinearGradient(x,0,x+250,0);
+    grad.addColorStop(0,"#7a0000");
+    grad.addColorStop(0.5,"#ff2a2a");
+    grad.addColorStop(1,"#5a0000");
 
-  function drop(e){
-    e.preventDefault();
-    this.classList.remove('over');
-    const id = e.dataTransfer.getData('text/plain');
-    placeItem(id, this.id);
-  }
+    ctx.fillStyle = grad;
+    ctx.fillRect(x,160,250,120);
 
-  // Allow keyboard drop
-  drops.forEach(d => {
-    d.tabIndex = 0;
-    d.addEventListener('keydown', function(e){
-      if((e.key === 'Enter' || e.key === ' ') && sessionStorage.getItem('kb-drag')){
-        const id = sessionStorage.getItem('kb-drag');
-        placeItem(id, this.id);
-        sessionStorage.removeItem('kb-drag');
-      }
-    });
-  });
+    let inner = ctx.createLinearGradient(0,160,0,280);
+    inner.addColorStop(0,"#2b0000");
+    inner.addColorStop(0.5,"#550000");
+    inner.addColorStop(1,"#2b0000");
 
-  function placeItem(itemId, dropId){
-    const item = document.getElementById(itemId);
-    if(!item) return;
-    // If this item is already placed somewhere else, clear previous
-    for(const d in placed){
-      if(placed[d] === itemId){
-        delete placed[d];
-        document.getElementById(d).classList.remove('occupied');
-        document.getElementById('slot-' + d.split('-')[1]).textContent = '—';
-      }
-    }
-    // If drop already has an item, return it to left column
-    if(placed[dropId]){
-      const prev = document.getElementById(placed[dropId]);
-      if(prev){
-        document.getElementById('items').appendChild(prev);
-      }
-    }
-    // Append item into drop visually
-    document.getElementById(dropId).appendChild(item);
-    placed[dropId] = itemId;
-    // update slot text
-    const slot = document.getElementById('slot-' + dropId.split('-')[1]);
-    slot.textContent = item.querySelector('.label').textContent;
-    // reset visual feedback
-    document.getElementById(dropId).classList.remove('correct','wrong');
-  }
+    ctx.fillStyle = inner;
+    ctx.fillRect(x,175,250,90);
+}
 
-  // Check button logic
-  document.getElementById('checkBtn').addEventListener('click', checkAll);
-  document.getElementById('resetBtn').addEventListener('click', resetAll);
+// ---------------- PLAQUE ----------------
+function drawPlaque() {
+    ctx.fillStyle = "#d4a373";
 
-  function checkAll(){
-    let allCorrect = true;
-    // iterate over drops
-    drops.forEach(d => {
-      const dropId = d.id;
-      const expected = d.dataset.accept;
-      const placedItemId = placed[dropId];
-      if(placedItemId){
-        const placedKey = document.getElementById(placedItemId).dataset.key;
-        if(placedKey === expected){
-          d.classList.add('correct');
-          d.classList.remove('wrong');
-          playTone(880, 0.12);
+    // oben: runde Seite nach unten (ins Gefäß)
+    ctx.beginPath();
+    ctx.ellipse(plaqueTop.cx, plaqueTop.cy, plaqueTop.rx, plaqueTop.ry, 0, 0, Math.PI);
+    ctx.fill();
+
+    // unten: runde Seite nach oben (ins Gefäß)
+    ctx.beginPath();
+    ctx.ellipse(plaqueBottom.cx, plaqueBottom.cy, plaqueBottom.rx, plaqueBottom.ry, 0, Math.PI, 2*Math.PI);
+    ctx.fill();
+}
+
+// ---------------- BLOCK ----------------
+function drawBlock() {
+    ctx.fillStyle = "#3b0000";
+    ctx.fillRect(920,175,20,90);
+}
+
+// ---------------- RBC ----------------
+function drawRBC(x,y) {
+    let g = ctx.createRadialGradient(x,y,1,x,y,6);
+    g.addColorStop(0,"#ff6666");
+    g.addColorStop(1,"#990000");
+
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.ellipse(x,y,6,4,0,0,Math.PI*2);
+    ctx.fill();
+}
+
+// ---------------- FLOW LOGIK ----------------
+function flowAround(p, plaque, direction) {
+
+    let dx = (p.x - plaque.cx) / plaque.rx;
+    let dy = (p.y - plaque.cy) / plaque.ry;
+    let dist = dx*dx + dy*dy;
+
+    // wenn nahe an Plaque → weich umlenken
+    if (dist < 1.2 && p.x > 450 && p.x < 650) {
+
+        if (direction === "down") {
+            p.y += (1 - dist) * 3; // sanft nach unten drücken
         } else {
-          d.classList.add('wrong');
-          d.classList.remove('correct');
-          allCorrect = false;
+            p.y -= (1 - dist) * 3; // sanft nach oben drücken
         }
-      } else {
-        d.classList.remove('correct');
-        d.classList.remove('wrong');
-        allCorrect = false;
-      }
-    });
-    if(allCorrect){
-      // celebration tone sequence
-      playSequence([880, 1046, 1318], 0.12);
     }
-  }
+}
 
-  function resetAll(){
-    // move all items back to left column
-    for(const d in placed){
-      const itemId = placed[d];
-      const item = document.getElementById(itemId);
-      if(item) document.getElementById('items').appendChild(item);
-      const slot = document.getElementById('slot-' + d.split('-')[1]);
-      if(slot) slot.textContent = '—';
-      const dropEl = document.getElementById(d);
-      if(dropEl) dropEl.classList.remove('correct','wrong','occupied');
-    }
-    for(const k in placed) delete placed[k];
-  }
+// ---------------- UPDATE ----------------
+function updateParticles() {
+    let pulse = Math.sin(time)*0.3 + 1;
 
-  // Show solution when user double-clicks Prüfen while holding Alt (convenience)
-  // But also provide explicit "Lösung anzeigen" if user wants: we'll add a long-press on check (not necessary)
-  // Provide a separate keyboard shortcut: Alt+L to reveal solution
-  document.addEventListener('keydown', function(e){
-    if(e.altKey && (e.key === 'l' || e.key === 'L')){
-      revealSolution();
-    }
-  });
+    particles.forEach(p => {
 
-  function revealSolution(){
-    // place each correct item into its correct drop
-    for(const key in correctMap){
-      const dropId = correctMap[key];
-      const itemEl = document.querySelector('[data-key="'+key+'"]');
-      if(itemEl){
-        placeItem(itemEl.id, dropId);
-      }
-    }
-    // mark correct visually
-    drops.forEach(d => {
-      d.classList.add('correct');
-      const slot = document.getElementById('slot-' + d.id.split('-')[1]);
-      if(slot && slot.textContent === '—'){
-        const id = placed[d.id];
-        if(id){
-          slot.textContent = document.getElementById(id).querySelector('.label').textContent;
+        if (p.zone === "left") {
+            p.x += 1.6 * pulse;
+            if (p.x > 300) p.x = 50;
         }
-      }
-    });
-    playSequence([880, 1046, 1318], 0.12);
-  }
 
-  // Audio helpers using WebAudio API
-  const AudioCtx = window.AudioContext || window.webkitAudioContext;
-  let audioCtx = null;
-  function ensureAudio(){
-    if(!audioCtx) audioCtx = new AudioCtx();
-  }
-  function playTone(freq=440, duration=0.15){
-    ensureAudio();
-    const o = audioCtx.createOscillator();
-    const g = audioCtx.createGain();
-    o.type = 'sine';
-    o.frequency.value = freq;
-    g.gain.value = 0.0001;
-    o.connect(g);
-    g.connect(audioCtx.destination);
-    const now = audioCtx.currentTime;
-    g.gain.exponentialRampToValueAtTime(0.12, now + 0.01);
-    o.start(now);
-    g.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-    o.stop(now + duration + 0.02);
-  }
-  function playSequence(freqs, dur){
-    let t = 0;
-    freqs.forEach((f,i) => {
-      setTimeout(()=>playTone(f,dur), t*1000);
-      t += dur + 0.05;
-    });
-  }
+        if (p.zone === "middle") {
+            p.x += 1.0 * pulse;
 
-  // Accessibility: allow dragging back to left by clicking a placed item
-  document.getElementById('items').addEventListener('click', function(e){
-    // nothing
-  });
-  // clicking on a placed item inside a drop returns it
-  document.body.addEventListener('click', function(e){
-    const el = e.target.closest('.draggable');
-    if(!el) return;
-    const parentDrop = el.parentElement;
-    if(parentDrop && parentDrop.classList.contains('drop')){
-      // move back to left
-      document.getElementById('items').appendChild(el);
-      // clear placed mapping
-      for(const d in placed){
-        if(placed[d] === el.id){
-          delete placed[d];
-          const slot = document.getElementById('slot-' + d.split('-')[1]);
-          if(slot) slot.textContent = '—';
-          parentDrop.classList.remove('correct','wrong');
+            // 👉 sanftes Umströmen (kein Springen!)
+            flowAround(p, plaqueTop, "down");
+            flowAround(p, plaqueBottom, "up");
+
+            // Turbulenz
+            if (p.x > 450 && p.x < 650) {
+                p.y += (Math.random()-0.5)*0.8;
+            }
+
+            // Begrenzung Gefäß
+            if (p.y < 175) p.y = 175;
+            if (p.y > 265) p.y = 265;
+
+            if (p.x > 700) p.x = 425;
         }
-      }
-    }
-  });
 
-  // Prevent images from being dragged as ghost images
-  document.querySelectorAll('img').forEach(img => {
-    img.addEventListener('dragstart', e => e.preventDefault());
-  });
+        if (p.zone === "right") {
+            p.x += 0.2;
 
-  // Initial focus
-  document.getElementById('items').querySelector('.draggable').focus();
+            if (p.x > 920) {
+                p.x = 890 + Math.random()*15;
+                p.y = 175 + Math.random()*90;
+            }
+        }
+    });
+}
+
+// ---------------- DRAW ----------------
+function draw() {
+    ctx.clearRect(0,0,c.width,c.height);
+
+    drawTube(50);
+    drawTube(425);
+    drawTube(800);
+
+    drawPlaque();
+    drawBlock();
+
+    particles.forEach(p => drawRBC(p.x,p.y));
+
+    ctx.fillStyle="white";
+    ctx.font="18px Arial";
+    ctx.fillText("Gesund", 120,130);
+    ctx.fillText("Arteriosklerose", 460,130);
+    ctx.fillText("Herzinfarkt", 830,130);
+}
+
+// ---------------- LOOP ----------------
+function animate() {
+    time += 0.05;
+    updateParticles();
+    draw();
+    requestAnimationFrame(animate);
+}
+animate();
+
 </script>
+
 </body>
 </html>
