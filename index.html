@@ -1,178 +1,384 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="de">
 <head>
-<meta charset="UTF-8">
-<title>Arteriosklerose – realistisch</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Reanimation: Zuordnen & Reihenfolge</title>
+
 <style>
-body { margin:0; background:#111; }
-canvas { display:block; margin:auto; background:#111; }
+  body{font-family:Arial,Helvetica,sans-serif;max-width:900px;margin:20px auto;padding:10px}
+  h1{font-size:1.4rem;margin-bottom:10px}
+  .panel{background:#f7f7f7;border:1px solid #ccc;border-radius:8px;padding:15px;margin-bottom:20px}
+  .flex{display:flex;gap:20px;flex-wrap:wrap}
+
+  /* SYMBOL + ANDOCKBEREICH */
+  .symbol-row{
+    display:flex;
+    align-items:flex-start;
+    gap:15px;
+    margin-bottom:20px;
+  }
+
+  .symbol-slot{
+    border:2px dashed #ccc;
+    border-radius:8px;
+    height:90px;
+    width:90px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:40px;
+    background:white;
+  }
+
+  .dock{
+    min-height:90px;
+    flex:1;
+    border:1px dashed #ccc;
+    border-radius:8px;
+    padding:10px;
+    background:white;
+  }
+
+  .dock.filled{
+    border-color:#2e7d32;
+    background:#e6ffe6;
+  }
+
+  .stmt{
+    border:1px solid #ccc;border-radius:8px;padding:10px;margin-bottom:10px;
+    background:white;cursor:grab;
+  }
+
+  .dragging{opacity:0.4}
+
+  .correct{background:#e6ffe6;border-color:#2e7d32}
+  .wrong{background:#ffe6e6;border-color:#c62828}
+
+  .order-item{
+    border:1px solid #ccc;border-radius:8px;padding:10px;margin-bottom:10px;
+    background:white;cursor:grab;display:flex;align-items:center;gap:10px;
+  }
+
+  .symbol-icon{font-size:32px}
+  button{padding:8px 12px;border-radius:6px;border:1px solid #666;background:white;cursor:pointer}
+  button.primary{background:#0078d4;color:white;border-color:#0078d4}
 </style>
 </head>
+
 <body>
 
-<canvas id="c" width="1100" height="420"></canvas>
+<h1>Reanimation: Zuordnen und Reihenfolge</h1>
+
+<!-- ----------------------------------------------------- -->
+<!-- A U F G A B E   A -->
+<!-- ----------------------------------------------------- -->
+
+<section class="panel">
+  <h2>Aufgabe A – Ziehe jede Aussage auf das passende Symbol</h2>
+
+  <!-- SYMBOL + ANDOCKBEREICHE -->
+  <div id="symbolArea">
+
+    <div class="symbol-row" data-key="atmung">
+      <div class="symbol-slot">🫁</div>
+      <div class="dock"></div>
+    </div>
+
+    <div class="symbol-row" data-key="handy">
+      <div class="symbol-slot">📞</div>
+      <div class="dock"></div>
+    </div>
+
+    <div class="symbol-row" data-key="herz">
+      <div class="symbol-slot">❤️</div>
+      <div class="dock"></div>
+    </div>
+
+    <div class="symbol-row" data-key="defi">
+      <div class="symbol-slot">⚡️</div>
+      <div class="dock"></div>
+    </div>
+
+  </div>
+
+  <!-- TEXTBAUSTEINE -->
+  <div id="stmts">
+
+    <div class="stmt" data-id="s4">
+      <strong>Schocken:</strong> Falls ein AED vorhanden ist, holst du ihn, schaltest ihn ein und folgst den Sprachanweisungen. 
+      Du unterbrichst die Herzdruckmassage dafür nur ganz kurz.
+    </div>
+
+    <div class="stmt" data-id="s2">
+      <strong>Rufen:</strong> Du wählst den Notruf 112, nennst deinen Standort und sagst, dass die Person nicht atmet. 
+      Du stellst das Telefon auf Lautsprecher, damit du beide Hände frei hast.
+    </div>
+
+    <div class="stmt" data-id="s3">
+      <strong>Drücken:</strong> Du beginnst sofort mit der Herzdruckmassage. 
+      Du drückst in der Mitte des Brustkorbs 100–120 Mal pro Minute etwa 5–6 cm tief. 
+      Der Rhythmus entspricht Liedern wie „Stayin’ Alive“.
+    </div>
+
+    <div class="stmt" data-id="s1">
+      <strong>Prüfen:</strong> Du sprichst die Person laut an, schüttelst sie an den Schultern und prüfst bis zu 10 Sekunden lang, ob sie normal atmet.
+    </div>
+
+  </div>
+
+  <button id="checkA" class="primary">Überprüfen</button>
+  <button id="resetA">Zurücksetzen</button>
+  <p id="resultA"></p>
+</section>
+
+<!-- ----------------------------------------------------- -->
+<!-- A U F G A B E   B -->
+<!-- ----------------------------------------------------- -->
+
+<section class="panel">
+  <h2>Aufgabe B – Bringe die Schritte in die richtige Reihenfolge</h2>
+
+  <ol id="orderList">
+
+    <li class="order-item" data-id="s2">
+      <div class="symbol-icon">📞</div>
+      Rufen: Du wählst 112, nennst deinen Standort und sagst, dass die Person nicht atmet.
+    </li>
+
+    <li class="order-item" data-id="s4">
+      <div class="symbol-icon">⚡️</div>
+      Schocken: Falls ein AED da ist, schaltest du ihn ein und folgst den Anweisungen.
+    </li>
+
+    <li class="order-item" data-id="s1">
+      <div class="symbol-icon">🫁</div>
+      Prüfen: Du sprichst die Person an, schüttelst sie und prüfst die Atmung.
+    </li>
+
+    <li class="order-item" data-id="s3">
+      <div class="symbol-icon">❤️</div>
+      Drücken: Du führst die Herzdruckmassage mit 100–120/min durch.
+    </li>
+
+  </ol>
+
+  <button id="checkB" class="primary">Überprüfen</button>
+  <button id="resetB">Zurücksetzen</button>
+  <p id="resultB"></p>
+</section>
 
 <script>
-const c = document.getElementById("c");
-const ctx = c.getContext("2d");
+/* ---------------------------------------------------------
+   A U F G A B E   A – Z U O R D N E N
+--------------------------------------------------------- */
 
-let time = 0;
-let particles = [];
+const mapping = { s1:"atmung", s2:"handy", s3:"herz", s4:"defi" };
+const stmts = document.querySelectorAll(".stmt");
+const docks = document.querySelectorAll(".dock");
+const stmtsContainer = document.getElementById("stmts");
 
-// Plaque-Formen (zeigen INS Gefäß)
-const plaqueTop = {cx:550, cy:175, rx:100, ry:40};   // oben
-const plaqueBottom = {cx:550, cy:265, rx:100, ry:40}; // unten
+/* Desktop Drag */
+stmts.forEach(s=>{
+  s.draggable = true;
+  s.addEventListener("dragstart", e=>{
+    s.classList.add("dragging");
+    e.dataTransfer.setData("text/plain", s.dataset.id);
+  });
+  s.addEventListener("dragend", ()=>s.classList.remove("dragging"));
+});
 
-// ---------------- PARTICLES ----------------
-function initParticles() {
-    for (let i = 0; i < 160; i++) {
-        particles.push({x:50+Math.random()*250, y:180+Math.random()*70, zone:"left"});
-        particles.push({x:425+Math.random()*250, y:180+Math.random()*70, zone:"middle"});
-        particles.push({x:800+Math.random()*250, y:180+Math.random()*70, zone:"right"});
+docks.forEach(dock=>{
+  dock.addEventListener("dragover", e=>e.preventDefault());
+  dock.addEventListener("drop", e=>{
+    const id = e.dataTransfer.getData("text/plain");
+    const el = document.querySelector(`.stmt[data-id='${id}']`);
+
+    dock.innerHTML = el.innerHTML;
+    dock.dataset.assigned = id;
+    dock.classList.add("filled");
+
+    el.remove();
+  });
+});
+
+/* Touch Drag */
+stmts.forEach(s=>{
+  s.addEventListener("pointerdown", e=>{
+    if(e.pointerType==="mouse") return;
+
+    let dragEl = s;
+    dragEl.classList.add("dragging");
+
+    let ghost = dragEl.cloneNode(true);
+    ghost.style.position="fixed";
+    ghost.style.left=e.clientX+"px";
+    ghost.style.top=e.clientY+"px";
+    ghost.style.zIndex=9999;
+    ghost.style.pointerEvents="none";
+    ghost.style.width=dragEl.offsetWidth+"px";
+    document.body.appendChild(ghost);
+
+    const move = ev=>{
+      ghost.style.left=ev.clientX+"px";
+      ghost.style.top=ev.clientY+"px";
+    };
+
+    const up = ev=>{
+      const drop = document.elementFromPoint(ev.clientX, ev.clientY);
+      const dock = drop && drop.closest(".dock");
+      if(dock){
+        dock.innerHTML = dragEl.innerHTML;
+        dock.dataset.assigned = dragEl.dataset.id;
+        dock.classList.add("filled");
+        dragEl.remove();
+      }
+      dragEl.classList.remove("dragging");
+      ghost.remove();
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  });
+});
+
+/* Check A */
+document.getElementById("checkA").onclick = ()=>{
+  let correct = 0;
+
+  docks.forEach(dock=>{
+    const id = dock.dataset.assigned;
+    const row = dock.closest(".symbol-row");
+    const key = row.dataset.key;
+
+    if(id){
+      if(mapping[id] === key){
+        dock.style.background="#e6ffe6";
+        correct++;
+      } else {
+        dock.style.background="#ffe6e6";
+      }
     }
-}
-initParticles();
+  });
 
-// ---------------- TUBE ----------------
-function drawTube(x) {
-    let grad = ctx.createLinearGradient(x,0,x+250,0);
-    grad.addColorStop(0,"#7a0000");
-    grad.addColorStop(0.5,"#ff2a2a");
-    grad.addColorStop(1,"#5a0000");
+  document.getElementById("resultA").textContent =
+    correct===4 ? "Alle Zuordnungen sind richtig." : `${correct} von 4 sind richtig.`;
+};
 
-    ctx.fillStyle = grad;
-    ctx.fillRect(x,160,250,120);
+/* Reset A */
+document.getElementById("resetA").onclick = ()=>{
+  docks.forEach(dock=>{
+    dock.innerHTML = "";
+    dock.classList.remove("filled");
+    dock.style.background="white";
+    dock.dataset.assigned="";
+  });
 
-    let inner = ctx.createLinearGradient(0,160,0,280);
-    inner.addColorStop(0,"#2b0000");
-    inner.addColorStop(0.5,"#550000");
-    inner.addColorStop(1,"#2b0000");
+  stmtsContainer.innerHTML = `
+    <div class="stmt" data-id="s4"><strong>Schocken:</strong> Falls ein AED vorhanden ist, holst du ihn, schaltest ihn ein und folgst den Sprachanweisungen. Du unterbrichst die Herzdruckmassage dafür nur ganz kurz.</div>
+    <div class="stmt" data-id="s2"><strong>Rufen:</strong> Du wählst den Notruf 112, nennst deinen Standort und sagst, dass die Person nicht atmet. Du stellst das Telefon auf Lautsprecher, damit du beide Hände frei hast.</div>
+    <div class="stmt" data-id="s3"><strong>Drücken:</strong> Du beginnst sofort mit der Herzdruckmassage. Du drückst in der Mitte des Brustkorbs 100–120 Mal pro Minute etwa 5–6 cm tief. Der Rhythmus entspricht Liedern wie „Stayin’ Alive“.</div>
+    <div class="stmt" data-id="s1"><strong>Prüfen:</strong> Du sprichst die Person laut an, schüttelst sie an den Schultern und prüfst bis zu 10 Sekunden lang, ob sie normal atmet.</div>
+  `;
+};
 
-    ctx.fillStyle = inner;
-    ctx.fillRect(x,175,250,90);
-}
+/* ---------------------------------------------------------
+   A U F G A B E   B – R E I H E N F O L G E
+--------------------------------------------------------- */
 
-// ---------------- PLAQUE ----------------
-function drawPlaque() {
-    ctx.fillStyle = "#d4a373";
+const orderList = document.getElementById("orderList");
+const initialOrder = [...orderList.children].map(li=>li.dataset.id);
 
-    // oben: runde Seite nach unten (ins Gefäß)
-    ctx.beginPath();
-    ctx.ellipse(plaqueTop.cx, plaqueTop.cy, plaqueTop.rx, plaqueTop.ry, 0, 0, Math.PI);
-    ctx.fill();
+/* Desktop Drag */
+orderList.querySelectorAll(".order-item").forEach(item=>{
+  item.draggable = true;
+  item.addEventListener("dragstart", e=>{
+    item.classList.add("dragging");
+    e.dataTransfer.setData("text/plain", item.dataset.id);
+  });
+  item.addEventListener("dragend", ()=>item.classList.remove("dragging"));
+});
 
-    // unten: runde Seite nach oben (ins Gefäß)
-    ctx.beginPath();
-    ctx.ellipse(plaqueBottom.cx, plaqueBottom.cy, plaqueBottom.rx, plaqueBottom.ry, 0, Math.PI, 2*Math.PI);
-    ctx.fill();
-}
+orderList.addEventListener("dragover", e=>{
+  e.preventDefault();
+  const dragging = document.querySelector(".order-item.dragging");
+  const after = [...orderList.querySelectorAll(".order-item:not(.dragging)")]
+    .find(li => e.clientY < li.getBoundingClientRect().top + li.offsetHeight/2);
+  if(after) orderList.insertBefore(dragging, after);
+  else orderList.appendChild(dragging);
+});
 
-// ---------------- BLOCK ----------------
-function drawBlock() {
-    ctx.fillStyle = "#3b0000";
-    ctx.fillRect(920,175,20,90);
-}
+/* Touch Drag */
+orderList.querySelectorAll(".order-item").forEach(item=>{
+  item.addEventListener("pointerdown", e=>{
+    if(e.pointerType==="mouse") return;
 
-// ---------------- RBC ----------------
-function drawRBC(x,y) {
-    let g = ctx.createRadialGradient(x,y,1,x,y,6);
-    g.addColorStop(0,"#ff6666");
-    g.addColorStop(1,"#990000");
+    let dragEl = item;
+    dragEl.classList.add("dragging");
 
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.ellipse(x,y,6,4,0,0,Math.PI*2);
-    ctx.fill();
-}
+    let ghost = dragEl.cloneNode(true);
+    ghost.style.position="fixed";
+    ghost.style.left=e.clientX+"px";
+    ghost.style.top=e.clientY+"px";
+    ghost.style.zIndex=9999;
+    ghost.style.pointerEvents="none";
+    ghost.style.width=dragEl.offsetWidth+"px";
+    document.body.appendChild(ghost);
 
-// ---------------- FLOW LOGIK ----------------
-function flowAround(p, plaque, direction) {
+    const move = ev=>{
+      ghost.style.left=ev.clientX+"px";
+      ghost.style.top=ev.clientY+"px";
 
-    let dx = (p.x - plaque.cx) / plaque.rx;
-    let dy = (p.y - plaque.cy) / plaque.ry;
-    let dist = dx*dx + dy*dy;
+      const after = [...orderList.querySelectorAll(".order-item:not(.dragging)")]
+        .find(li => ev.clientY < li.getBoundingClientRect().top + li.offsetHeight/2);
 
-    // wenn nahe an Plaque → weich umlenken
-    if (dist < 1.2 && p.x > 450 && p.x < 650) {
+      if(after) orderList.insertBefore(dragEl, after);
+      else orderList.appendChild(dragEl);
+    };
 
-        if (direction === "down") {
-            p.y += (1 - dist) * 3; // sanft nach unten drücken
-        } else {
-            p.y -= (1 - dist) * 3; // sanft nach oben drücken
-        }
+    const up = ()=>{
+      dragEl.classList.remove("dragging");
+      ghost.remove();
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  });
+});
+
+/* Check B */
+document.getElementById("checkB").onclick = ()=>{
+  const correctSeq = ["s1","s2","s3","s4"];
+  const current = [...orderList.children].map(li=>li.dataset.id);
+  let correct = 0;
+
+  [...orderList.children].forEach((li,i)=>{
+    li.classList.remove("correct","wrong");
+    if(current[i]===correctSeq[i]){
+      li.classList.add("correct");
+      correct++;
+    } else {
+      li.classList.add("wrong");
     }
-}
+  });
 
-// ---------------- UPDATE ----------------
-function updateParticles() {
-    let pulse = Math.sin(time)*0.3 + 1;
+  document.getElementById("resultB").textContent =
+    correct===4 ? "Die Reihenfolge ist richtig." : `${correct} von 4 Positionen sind richtig.`;
+};
 
-    particles.forEach(p => {
-
-        if (p.zone === "left") {
-            p.x += 1.6 * pulse;
-            if (p.x > 300) p.x = 50;
-        }
-
-        if (p.zone === "middle") {
-            p.x += 1.0 * pulse;
-
-            // 👉 sanftes Umströmen (kein Springen!)
-            flowAround(p, plaqueTop, "down");
-            flowAround(p, plaqueBottom, "up");
-
-            // Turbulenz
-            if (p.x > 450 && p.x < 650) {
-                p.y += (Math.random()-0.5)*0.8;
-            }
-
-            // Begrenzung Gefäß
-            if (p.y < 175) p.y = 175;
-            if (p.y > 265) p.y = 265;
-
-            if (p.x > 700) p.x = 425;
-        }
-
-        if (p.zone === "right") {
-            p.x += 0.2;
-
-            if (p.x > 920) {
-                p.x = 890 + Math.random()*15;
-                p.y = 175 + Math.random()*90;
-            }
-        }
-    });
-}
-
-// ---------------- DRAW ----------------
-function draw() {
-    ctx.clearRect(0,0,c.width,c.height);
-
-    drawTube(50);
-    drawTube(425);
-    drawTube(800);
-
-    drawPlaque();
-    drawBlock();
-
-    particles.forEach(p => drawRBC(p.x,p.y));
-
-    ctx.fillStyle="white";
-    ctx.font="18px Arial";
-    ctx.fillText("Gesund", 120,130);
-    ctx.fillText("Arteriosklerose", 460,130);
-    ctx.fillText("Herzinfarkt", 830,130);
-}
-
-// ---------------- LOOP ----------------
-function animate() {
-    time += 0.05;
-    updateParticles();
-    draw();
-    requestAnimationFrame(animate);
-}
-animate();
-
+/* Reset B */
+document.getElementById("resetB").onclick = ()=>{
+  initialOrder.forEach(id=>{
+    const el = orderList.querySelector(`[data-id='${id}']`);
+    orderList.appendChild(el);
+    el.classList.remove("correct","wrong");
+  });
+  document.getElementById("resultB").textContent="";
+};
 </script>
 
 </body>
