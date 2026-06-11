@@ -2,93 +2,267 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Bewegungsarten – interaktive Übung</title>
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bewegungen in Natur und Technik</title>
 <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    table { border-collapse: collapse; width: 100%; max-width: 900px; }
-    th, td { border: 1px solid #444; padding: 10px; text-align: center; }
-    .icon { font-size: 40px; }
-    .correct { background-color: #8fff8f; }
-    .wrong { background-color: #ff8f8f; }
-</style>
-
-<script>
-function checkAnswer(checkbox, correct) {
-    const cell = checkbox.parentElement;
-
-    // Reset Farben
-    cell.classList.remove("correct", "wrong");
-
-    if (checkbox.checked) {
-        if (correct) {
-            cell.classList.add("correct");
-        } else {
-            cell.classList.add("wrong");
-        }
-    }
+body {
+    font-family: Arial, sans-serif;
+    background: #d9d9d9;
+    margin: 0;
+    padding: 20px;
 }
-</script>
 
+h1 {
+    text-align: center;
+    color: #003366;
+}
+
+.subtitle {
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 18px;
+}
+
+.container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    max-width: 1200px;
+    margin: auto;
+}
+
+.box {
+    background: #eef7fb;
+    border: 3px solid #888;
+    border-radius: 12px;
+    min-height: 300px;
+    padding: 15px;
+}
+
+.box h2 {
+    text-align: center;
+    color: #0a4a7a;
+}
+
+.cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 30px;
+}
+
+.card {
+    text-align: center;
+    width: 130px;
+    height: 130px;
+    background: white;
+    border: 2px solid #555;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+    justify-content: center;
+    align-items: center;
+    font-size: 18px;
+    cursor: grab;
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: scale(1.05);
+}
+
+.emoji {
+    font-size: 45px;
+}
+
+.dropzone {
+    min-height: 180px;
+    border: 2px dashed #888;
+    border-radius: 10px;
+    padding: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+button {
+    display: block;
+    margin: 20px auto;
+    padding: 12px 24px;
+    font-size: 18px;
+    border: none;
+    border-radius: 10px;
+    background: #0a5ea8;
+    color: white;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #083d6d;
+}
+
+.result {
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+    margin-top: 20px;
+}
+</style>
 </head>
 <body>
 
-<h1>Gleichförmige und beschleunigte Bewegungen</h1>
-<p>Setze ein Häkchen – richtig = grün, falsch = rot.</p>
+<h1>Bewegungen in Natur und Technik</h1>
+<p class="subtitle">
+Ordne die Karten richtig zu: Natur oder Technik? Gleichförmig oder beschleunigt?
+</p>
 
-<table>
-    <tr>
-        <th>Situation</th>
-        <th>Symbol</th>
-        <th>Gleichförmig</th>
-        <th>Beschleunigt</th>
-    </tr>
+<div class="cards" id="cards">
+    <div class="card" draggable="true" data-category="technik-gleich">
+        <div class="emoji">🚆</div>
+        Zug auf gerader Strecke
+    </div>
 
-    <tr>
-        <td>Zug auf gerader Strecke</td>
-        <td class="icon">🚆</td>
-        <td><input type="checkbox" onclick="checkAnswer(this, true)"></td>
-        <td><input type="checkbox" onclick="checkAnswer(this, false)"></td>
-    </tr>
+    <div class="card" draggable="true" data-category="technik-beschl">
+        <div class="emoji">🚀</div>
+        Rakete beim Start
+    </div>
 
-    <tr>
-        <td>Startendes Flugzeug</td>
-        <td class="icon">✈️</td>
-        <td><input type="checkbox" onclick="checkAnswer(this, false)"></td>
-        <td><input type="checkbox" onclick="checkAnswer(this, true)"></td>
-    </tr>
+    <div class="card" draggable="true" data-category="natur-gleich">
+        <div class="emoji">🌊</div>
+        Fluss
+    </div>
 
-    <!-- Vertauscht: Freifall kommt jetzt hier -->
-    <tr>
-        <td>Freifall eines Apfels</td>
-        <td class="icon">🍎⬇️</td>
-        <td><input type="checkbox" onclick="checkAnswer(this, false)"></td>
-        <td><input type="checkbox" onclick="checkAnswer(this, true)"></td>
-    </tr>
+    <div class="card" draggable="true" data-category="natur-beschl">
+        <div class="emoji">🌧️</div>
+        Wasserfall
+    </div>
 
-    <!-- Vertauscht: Rolltreppe kommt jetzt hier -->
-    <tr>
-        <td>Rolltreppe</td>
-        <td class="icon">⬆️⬇️</td>
-        <td><input type="checkbox" onclick="checkAnswer(this, true)"></td>
-        <td><input type="checkbox" onclick="checkAnswer(this, false)"></td>
-    </tr>
+    <div class="card" draggable="true" data-category="technik-gleich">
+        <div class="emoji">🚗</div>
+        Auto mit Tempomat
+    </div>
 
-    <tr>
-        <td>Auto mit Tempomat</td>
-        <td class="icon">🚗</td>
-        <td><input type="checkbox" onclick="checkAnswer(this, true)"></td>
-        <td><input type="checkbox" onclick="checkAnswer(this, false)"></td>
-    </tr>
+    <div class="card" draggable="true" data-category="natur-beschl">
+        <div class="emoji">🐆</div>
+        Gepard
+    </div>
+</div>
 
-    <tr>
-        <td>Fahrrad beim Anfahren</td>
-        <td class="icon">🚴‍♂️</td>
-        <td><input type="checkbox" onclick="checkAnswer(this, false)"></td>
-        <td><input type="checkbox" onclick="checkAnswer(this, true)"></td>
-    </tr>
+<div class="container">
 
-</table>
+    <div class="box">
+        <h2>Natur – gleichförmig</h2>
+        <div class="dropzone" data-match="natur-gleich"></div>
+    </div>
+
+    <div class="box">
+        <h2>Natur – beschleunigt</h2>
+        <div class="dropzone" data-match="natur-beschl"></div>
+    </div>
+
+    <div class="box">
+        <h2>Technik – gleichförmig</h2>
+        <div class="dropzone" data-match="technik-gleich"></div>
+    </div>
+
+    <div class="box">
+        <h2>Technik – beschleunigt</h2>
+        <div class="dropzone" data-match="technik-beschl"></div>
+    </div>
+
+</div>
+
+<button onclick="checkAnswers()">Überprüfen</button>
+
+<div class="result" id="result"></div>
+
+<script>
+const cards = document.querySelectorAll('.card');
+const zones = document.querySelectorAll('.dropzone');
+
+let draggedCard = null;
+
+// Maus-Drag
+cards.forEach(card => {
+    card.addEventListener('dragstart', () => {
+        draggedCard = card;
+    });
+});
+
+zones.forEach(zone => {
+    zone.addEventListener('dragover', e => {
+        e.preventDefault();
+    });
+
+    zone.addEventListener('drop', () => {
+        zone.appendChild(draggedCard);
+    });
+});
+
+// Touch-Drag (für Tablets/Smartphones)
+cards.forEach(card => {
+    card.addEventListener('touchstart', e => {
+        draggedCard = card;
+        card.style.opacity = "0.6";
+    });
+
+    card.addEventListener('touchmove', e => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const element = document.elementFromPoint(touch.clientX, touch.clientY);
+
+        zones.forEach(zone => {
+            zone.style.background = (zone === element || zone.contains(element))
+                ? "#cce7ff"
+                : "transparent";
+        });
+    });
+
+    card.addEventListener('touchend', e => {
+        card.style.opacity = "1";
+
+        const touch = e.changedTouches[0];
+        const element = document.elementFromPoint(touch.clientX, touch.clientY);
+
+        zones.forEach(zone => zone.style.background = "transparent");
+
+        if (element && element.classList.contains('dropzone')) {
+            element.appendChild(draggedCard);
+        }
+    });
+});
+
+function checkAnswers() {
+    let correct = 0;
+    let total = cards.length;
+
+    zones.forEach(zone => {
+        const match = zone.dataset.match;
+        const zoneCards = zone.querySelectorAll('.card');
+
+        zoneCards.forEach(card => {
+            if(card.dataset.category === match) {
+                correct++;
+                card.style.border = '3px solid green';
+            } else {
+                card.style.border = '3px solid red';
+            }
+        });
+    });
+
+    const result = document.getElementById('result');
+
+    if(correct === total) {
+        result.innerHTML = '✅ Super! Alle Karten sind richtig zugeordnet.';
+        result.style.color = 'green';
+    } else {
+        result.innerHTML = '⚠️ ' + correct + ' von ' + total + ' Karten richtig.';
+        result.style.color = '#cc6600';
+    }
+}
+</script>
 
 </body>
 </html>
