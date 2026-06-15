@@ -1,1 +1,255 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Auto & Lokomotive – Gleichförmige Bewegung</title>
+<style>
+  body { font-family: sans-serif; margin: 20px; }
+  #layout { display: flex; flex-direction: column; gap: 20px; max-width: 900px; }
+
+  .spur {
+    border: 1px solid #000;
+    height: 120px;
+    position: relative;
+    overflow: hidden;
+    background: #f2f2f2;
+  }
+  .linie {
+    position: absolute;
+    left: 0; right: 0;
+    top: 70%;
+    border-top: 2px solid #555;
+  }
+
+  .fahrzeug {
+    position: absolute;
+    width: 150px;
+    height: 90px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  #steuerung { display: flex; gap: 10px; align-items: center; }
+  canvas { border: 1px solid #000; background: #fff; }
+</style>
+</head>
+<body>
+<div id="layout">
+
+<h1>Geradlinig gleichförmige Bewegung – Auto & Lokomotive</h1>
+
+<!-- Auto oben -->
+<div class="spur" id="spurAuto">
+  <div class="linie"></div>
+
+  <!-- KASTIGES AUTO -->
+  <svg id="auto" class="fahrzeug" viewBox="0 0 320 160">
+    <!-- Karosserie -->
+    <rect x="30" y="70" width="250" height="55" rx="6"
+          fill="#1e90ff" stroke="#0a3f7a" stroke-width="4"/>
+    <!-- Dachkasten -->
+    <rect x="70" y="40" width="170" height="45" rx="4"
+          fill="#cce6ff" stroke="#0a3f7a" stroke-width="3"/>
+    <!-- Räder -->
+    <circle cx="100" cy="135" r="20" fill="#222"/>
+    <circle cx="220" cy="135" r="20" fill="#222"/>
+    <!-- Scheinwerfer -->
+    <rect x="260" y="85" width="20" height="12" fill="#fff"/>
+  </svg>
+</div>
+
+<!-- Lokomotive unten -->
+<div class="spur" id="spurZug">
+  <div class="linie"></div>
+
+  <!-- LOKOMOTIVE -->
+  <svg id="zug" class="fahrzeug" viewBox="0 0 420 160">
+    <!-- Lok-Körper -->
+    <rect x="40" y="50" width="330" height="70" rx="6"
+          fill="#c40000" stroke="#7a0000" stroke-width="4"/>
+
+    <!-- Führerstand -->
+    <rect x="40" y="20" width="120" height="50" rx="4"
+          fill="#c40000" stroke="#7a0000" stroke-width="4"/>
+
+    <!-- Frontscheibe -->
+    <rect x="55" y="30" width="60" height="25" rx="3"
+          fill="#e6f2ff" stroke="#7a0000" stroke-width="2"/>
+
+    <!-- Seitenfenster -->
+    <rect x="180" y="60" width="60" height="30" fill="#ffffff"/>
+    <rect x="260" y="60" width="60" height="30" fill="#ffffff"/>
+
+    <!-- Lüftergitter -->
+    <rect x="140" y="55" width="30" height="40" fill="#333"/>
+    <rect x="310" y="55" width="30" height="40" fill="#333"/>
+
+    <!-- Puffer -->
+    <circle cx="40" cy="95" r="12" fill="#222"/>
+    <circle cx="370" cy="95" r="12" fill="#222"/>
+
+    <!-- Räder -->
+    <circle cx="120" cy="125" r="18" fill="#222"/>
+    <circle cx="240" cy="125" r="18" fill="#222"/>
+    <circle cx="330" cy="125" r="18" fill="#222"/>
+
+    <!-- Scheinwerfer -->
+    <rect x="75" y="85" width="20" height="12" fill="#fff"/>
+  </svg>
+</div>
+
+<div id="steuerung">
+  <button id="startBtn">Start</button>
+  <button id="resetBtn">Reset</button>
+  <span>Zeit: <span id="zeitAnzeige">0.0</span> s</span>
+</div>
+
+<canvas id="diagramm" width="800" height="320"></canvas>
+
+</div>
+
+<script>
+const canvas = document.getElementById('diagramm');
+const ctx = canvas.getContext('2d');
+
+const autoEl = document.getElementById('auto');
+const zugEl  = document.getElementById('zug');
+
+const spurAuto = document.getElementById('spurAuto');
+const spurZug  = document.getElementById('spurZug');
+
+const startBtn = document.getElementById('startBtn');
+const resetBtn = document.getElementById('resetBtn');
+const zeitAnzeige = document.getElementById('zeitAnzeige');
+
+const maxT = 20;
+const maxS = 400;
+const vAuto = 12;
+const vZug  = 25;
+
+const pxAuto = spurAuto.clientWidth - 170;
+const pxZug  = spurZug.clientWidth  - 170;
+
+let running = false;
+let startTime = null;
+
+let punkteAuto = [];
+let punkteZug  = [];
+
+function zeichneAchsen() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = 1;
+
+  ctx.beginPath();
+  ctx.moveTo(60,280); ctx.lineTo(780,280);
+  ctx.lineTo(770,275); ctx.moveTo(780,280); ctx.lineTo(770,285);
+
+  ctx.moveTo(60,280); ctx.lineTo(60,20);
+  ctx.lineTo(55,30); ctx.moveTo(60,20); ctx.lineTo(65,30);
+  ctx.stroke();
+
+  ctx.font = '14px sans-serif';
+  ctx.fillText('t [s]', 740, 300);
+
+  ctx.save();
+  ctx.translate(25,100);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText('s [m]', 0,0);
+  ctx.restore();
+
+  ctx.strokeStyle = '#ccc';
+  ctx.font = '10px sans-serif';
+  for (let t=0; t<=maxT; t+=5) {
+    const x = skaliere(t,0).x;
+    ctx.beginPath();
+    ctx.moveTo(x,280); ctx.lineTo(x,20);
+    ctx.stroke();
+    ctx.fillText(t, x-4, 295);
+  }
+  for (let s=0; s<=maxS; s+=100) {
+    const y = skaliere(0,s).y;
+    ctx.beginPath();
+    ctx.moveTo(60,y); ctx.lineTo(780,y);
+    ctx.stroke();
+    ctx.fillText(s, 30, y+3);
+  }
+}
+
+function skaliere(t,s) {
+  const x = 60 + (t/maxT) * (780-60);
+  const y = 280 - (s/maxS) * (260);
+  return {x,y};
+}
+
+function zeichneLinien() {
+  zeichneAchsen();
+
+  ctx.lineWidth = 2;
+
+  ctx.strokeStyle = '#1e90ff';
+  ctx.beginPath();
+  punkteAuto.forEach((p,i)=>{
+    const {x,y} = skaliere(p.t,p.s);
+    if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+
+  ctx.strokeStyle = '#c40000';
+  ctx.beginPath();
+  punkteZug.forEach((p,i)=>{
+    const {x,y} = skaliere(p.t,p.s);
+    if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+}
+
+function animLoop(timestamp) {
+  if (!running) return;
+  if (!startTime) startTime = timestamp;
+
+  const t = Math.min((timestamp - startTime) / 1000, maxT);
+
+  zeitAnzeige.textContent = t.toFixed(2);
+
+  const sAuto = Math.min(vAuto * t, maxS);
+  const sZug  = Math.min(vZug  * t, maxS);
+
+  autoEl.style.left = (10 + (sAuto/maxS)*pxAuto) + 'px';
+  zugEl.style.left  = (10 + (sZug /maxS)*pxZug ) + 'px';
+
+  punkteAuto.push({t, s: sAuto});
+  punkteZug.push({t, s: sZug});
+
+  zeichneLinien();
+
+  if (t < maxT) requestAnimationFrame(animLoop);
+  else running = false;
+}
+
+function reset() {
+  running = false;
+  startTime = null;
+  zeitAnzeige.textContent = '0.0';
+  punkteAuto = [];
+  punkteZug  = [];
+  autoEl.style.left = '10px';
+  zugEl.style.left  = '10px';
+  zeichneAchsen();
+}
+
+startBtn.addEventListener('click', () => {
+  if (!running) {
+    running = true;
+    requestAnimationFrame(animLoop);
+  }
+});
+
+resetBtn.addEventListener('click', reset);
+
+reset();
+</script>
+</body>
+</html>
 
