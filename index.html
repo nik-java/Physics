@@ -3,266 +3,180 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bewegungen in Natur und Technik</title>
+<title>Gleichförmige Bewegung</title>
 <style>
-body {
-    font-family: Arial, sans-serif;
-    background: #d9d9d9;
-    margin: 0;
-    padding: 20px;
+*{box-sizing:border-box}
+html,body{
+  margin:0;height:100%;overflow:hidden;
+  font-family:Arial,sans-serif;background:#eef3f8;
 }
-
-h1 {
-    text-align: center;
-    color: #003366;
+body{display:flex;flex-direction:column;text-align:center}
+h1{
+  margin:0;padding:12px;background:#1976d2;color:#fff;
+  font-size:28px;
 }
-
-.subtitle {
-    text-align: center;
-    margin-bottom: 20px;
-    font-size: 18px;
+p{margin:8px;font-size:18px;font-weight:bold}
+.container{
+  flex:1;display:flex;gap:18px;padding:0 12px 12px;
 }
-
-.container {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
-    max-width: 1200px;
-    margin: auto;
+.spalte{flex:1;display:flex;flex-direction:column}
+h2{
+  margin:0 0 8px;padding:8px;background:#ddd;
+  border-radius:12px;font-size:22px;
 }
-
-.box {
-    background: #eef7fb;
-    border: 3px solid #888;
-    border-radius: 12px;
-    min-height: 300px;
-    padding: 15px;
+.kartenbereich{
+  flex:1;display:grid;grid-template-rows:repeat(4,1fr);
+  gap:8px;
 }
-
-.box h2 {
-    text-align: center;
-    color: #0a4a7a;
+.karte{
+  background:#fff;border:4px solid #1976d2;border-radius:16px;
+  box-shadow:0 2px 8px rgba(0,0,0,.12);
+  cursor:pointer;user-select:none;
+  transition:transform .15s;
 }
-
-.cards {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    justify-content: center;
-    margin-bottom: 30px;
+.karte:hover{transform:scale(1.02)}
+.bewegung{
+  display:flex;align-items:center;justify-content:center;
+  gap:12px;height:100%;padding:6px;
 }
-
-.card {
-    text-align: center;
-    width: 130px;
-    height: 130px;
-    background: white;
-    border: 2px solid #555;
-    border-radius: 10px;
-    display: flex;
-    flex-direction: column;
-    text-align: center;
-    justify-content: center;
-    align-items: center;
-    font-size: 18px;
-    cursor: grab;
-    transition: transform 0.2s;
+.icon{font-size:40px}
+.text{font-size:16px;font-weight:bold}
+.diagramm{
+  height:100%;display:flex;align-items:center;justify-content:center;
 }
-
-.card:hover {
-    transform: scale(1.05);
+svg{width:100%;height:100%;max-height:90px}
+.achse{stroke:#000;stroke-width:3}
+.linie{stroke:#d32f2f;stroke-width:5}
+.aktiv{background:#fff8e1;border-color:#ff9800}
+.falsch{background:#ffcdd2;border-color:#d32f2f}
+.gelb{background:#fff9c4;border-color:#fbc02d}
+.blau{background:#bbdefb;border-color:#1976d2}
+.braun{background:#d7ccc8;border-color:#795548}
+.gruen{background:#c8e6c9;border-color:#2e7d32}
+.blink{animation:blink .5s 2}
+@keyframes blink{
+  50%{transform:scale(1.05)}
 }
-
-.emoji {
-    font-size: 45px;
+.schuettel{animation:shake .45s}
+@keyframes shake{
+  20%{transform:translateX(-8px)}
+  40%{transform:translateX(8px)}
+  60%{transform:translateX(-8px)}
+  80%{transform:translateX(8px)}
 }
-
-.dropzone {
-    min-height: 180px;
-    border: 2px dashed #888;
-    border-radius: 10px;
-    padding: 10px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
+#popup{
+  position:fixed;inset:0;background:rgba(0,0,0,.4);
+  display:none;justify-content:center;align-items:center;
 }
-
-button {
-    display: block;
-    margin: 20px auto;
-    padding: 12px 24px;
-    font-size: 18px;
-    border: none;
-    border-radius: 10px;
-    background: #0a5ea8;
-    color: white;
-    cursor: pointer;
-}
-
-button:hover {
-    background: #083d6d;
-}
-
-.result {
-    text-align: center;
-    font-size: 24px;
-    font-weight: bold;
-    margin-top: 20px;
+#popupBox{
+  background:#fff;border-radius:20px;
+  padding:28px;max-width:700px;width:85%;
+  font-size:28px;font-weight:bold;
 }
 </style>
 </head>
 <body>
-
-<h1>Bewegungen in Natur und Technik</h1>
-<p class="subtitle">
-Ordne die Karten richtig zu: Natur oder Technik? Gleichförmig oder beschleunigt?
-</p>
-
-<div class="cards" id="cards">
-    <div class="card" draggable="true" data-category="technik-gleich">
-        <div class="emoji">🚆</div>
-        Zug auf gerader Strecke
-    </div>
-
-    <div class="card" draggable="true" data-category="technik-beschl">
-        <div class="emoji">🚀</div>
-        Rakete beim Start
-    </div>
-
-    <div class="card" draggable="true" data-category="natur-gleich">
-        <div class="emoji">🌊</div>
-        Fluss
-    </div>
-
-    <div class="card" draggable="true" data-category="natur-beschl">
-        <div class="emoji">🌧️</div>
-        Wasserfall
-    </div>
-
-    <div class="card" draggable="true" data-category="technik-gleich">
-        <div class="emoji">🚗</div>
-        Auto mit Tempomat
-    </div>
-
-    <div class="card" draggable="true" data-category="natur-beschl">
-        <div class="emoji">🐆</div>
-        Gepard
-    </div>
-</div>
+<h1>Gleichförmige Bewegung</h1>
+<p>Ordne die Bewegungen dem passenden Weg-Zeit-Diagramm zu.</p>
 
 <div class="container">
+<div class="spalte">
+<h2>Bewegungen</h2>
+<div id="bewegungen" class="kartenbereich">
 
-    <div class="box">
-        <h2>Natur – gleichförmig</h2>
-        <div class="dropzone" data-match="natur-gleich"></div>
-    </div>
+<div class="karte textkarte" data-id="1"><div class="bewegung"><span class="icon">🚜</span><span class="text">Der Traktor fährt langsam.</span></div></div>
+<div class="karte textkarte" data-id="2"><div class="bewegung"><span class="icon">🚗</span><span class="text">Das Auto fährt zügig.</span></div></div>
+<div class="karte textkarte" data-id="3"><div class="bewegung"><span class="icon">🏎️</span><span class="text">Der Rennwagen fährt außergewöhnlich schnell.</span></div></div>
+<div class="karte textkarte" data-id="4"><div class="bewegung"><span class="icon">🚗</span><span class="text">Das Auto steht still.</span></div></div>
 
-    <div class="box">
-        <h2>Natur – beschleunigt</h2>
-        <div class="dropzone" data-match="natur-beschl"></div>
-    </div>
+</div></div>
 
-    <div class="box">
-        <h2>Technik – gleichförmig</h2>
-        <div class="dropzone" data-match="technik-gleich"></div>
-    </div>
+<div class="spalte">
+<h2>Weg-Zeit-Diagramme</h2>
+<div id="diagramme" class="kartenbereich">
 
-    <div class="box">
-        <h2>Technik – beschleunigt</h2>
-        <div class="dropzone" data-match="technik-beschl"></div>
-    </div>
+<div class="karte diagrammkarte" data-id="1"><div class="diagramm"><svg viewBox="0 0 320 140"><line class="achse" x1="40" y1="110" x2="290" y2="110"/><line class="achse" x1="40" y1="110" x2="40" y2="20"/><line class="linie" x1="40" y1="100" x2="280" y2="75"/></svg></div></div>
 
+<div class="karte diagrammkarte" data-id="2"><div class="diagramm"><svg viewBox="0 0 320 140"><line class="achse" x1="40" y1="110" x2="290" y2="110"/><line class="achse" x1="40" y1="110" x2="40" y2="20"/><line class="linie" x1="40" y1="105" x2="270" y2="45"/></svg></div></div>
+
+<div class="karte diagrammkarte" data-id="3"><div class="diagramm"><svg viewBox="0 0 320 140"><line class="achse" x1="40" y1="110" x2="290" y2="110"/><line class="achse" x1="40" y1="110" x2="40" y2="20"/><line class="linie" x1="40" y1="105" x2="170" y2="20"/></svg></div></div>
+
+<div class="karte diagrammkarte" data-id="4"><div class="diagramm"><svg viewBox="0 0 320 140"><line class="achse" x1="40" y1="110" x2="290" y2="110"/><line class="achse" x1="40" y1="110" x2="40" y2="20"/><line class="linie" x1="40" y1="65" x2="280" y2="65"/></svg></div></div>
+
+</div></div>
 </div>
 
-<button onclick="checkAnswers()">Überprüfen</button>
-
-<div class="result" id="result"></div>
+<div id="popup">
+  <div id="popupBox">🎉 Super, du hast die Bewegungen den richtigen Weg‑Zeit‑Diagrammen zugeordnet.</div>
+</div>
 
 <script>
-const cards = document.querySelectorAll('.card');
-const zones = document.querySelectorAll('.dropzone');
+let ausgewaehlt = null;
+const farben = ["gelb","blau","braun","gruen"];
+let index = 0;
 
-let draggedCard = null;
-
-// Maus-Drag
-cards.forEach(card => {
-    card.addEventListener('dragstart', () => {
-        draggedCard = card;
-    });
-});
-
-zones.forEach(zone => {
-    zone.addEventListener('dragover', e => {
-        e.preventDefault();
-    });
-
-    zone.addEventListener('drop', () => {
-        zone.appendChild(draggedCard);
-    });
-});
-
-// Touch-Drag (für Tablets/Smartphones)
-cards.forEach(card => {
-    card.addEventListener('touchstart', e => {
-        draggedCard = card;
-        card.style.opacity = "0.6";
-    });
-
-    card.addEventListener('touchmove', e => {
-        e.preventDefault();
-        const touch = e.touches[0];
-        const element = document.elementFromPoint(touch.clientX, touch.clientY);
-
-        zones.forEach(zone => {
-            zone.style.background = (zone === element || zone.contains(element))
-                ? "#cce7ff"
-                : "transparent";
-        });
-    });
-
-    card.addEventListener('touchend', e => {
-        card.style.opacity = "1";
-
-        const touch = e.changedTouches[0];
-        const element = document.elementFromPoint(touch.clientX, touch.clientY);
-
-        zones.forEach(zone => zone.style.background = "transparent");
-
-        if (element && element.classList.contains('dropzone')) {
-            element.appendChild(draggedCard);
-        }
-    });
-});
-
-function checkAnswers() {
-    let correct = 0;
-    let total = cards.length;
-
-    zones.forEach(zone => {
-        const match = zone.dataset.match;
-        const zoneCards = zone.querySelectorAll('.card');
-
-        zoneCards.forEach(card => {
-            if(card.dataset.category === match) {
-                correct++;
-                card.style.border = '3px solid green';
-            } else {
-                card.style.border = '3px solid red';
-            }
-        });
-    });
-
-    const result = document.getElementById('result');
-
-    if(correct === total) {
-        result.innerHTML = '✅ Super! Alle Karten sind richtig zugeordnet.';
-        result.style.color = 'green';
-    } else {
-        result.innerHTML = '⚠️ ' + correct + ' von ' + total + ' Karten richtig.';
-        result.style.color = '#cc6600';
-    }
+function ton(){
+  const a = new (window.AudioContext || window.webkitAudioContext)();
+  const o = a.createOscillator();
+  const g = a.createGain();
+  o.connect(g); g.connect(a.destination);
+  o.frequency.value = 850;
+  g.gain.value = 0.12;
+  g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+0.18);
+  o.start();
+  o.stop(a.currentTime+0.18);
 }
-</script>
 
+document.querySelectorAll(".textkarte").forEach(k=>{
+  k.addEventListener("click",()=>{
+    if(k.style.pointerEvents==="none") return;
+    document.querySelectorAll(".textkarte").forEach(x=>x.classList.remove("aktiv"));
+    k.classList.add("aktiv");
+    ausgewaehlt = k;
+  });
+});
+
+document.querySelectorAll(".diagrammkarte").forEach(d=>{
+  d.addEventListener("click",()=>{
+    if(!ausgewaehlt || d.style.pointerEvents==="none") return;
+
+    if(ausgewaehlt.dataset.id===d.dataset.id){
+      const f = farben[index++];
+      [ausgewaehlt,d].forEach(el=>{
+        el.classList.remove("aktiv");
+        el.classList.add(f,"blink");
+        el.style.pointerEvents="none";
+      });
+      ton();
+      ausgewaehlt = null;
+
+      if(document.querySelectorAll(".gelb,.blau,.braun,.gruen").length===8){
+        setTimeout(()=>{
+          document.getElementById("popup").style.display="flex";
+        },500);
+      }
+    }else{
+      [ausgewaehlt,d].forEach(el=>el.classList.add("falsch","schuettel"));
+      setTimeout(()=>{
+        [ausgewaehlt,d].forEach(el=>el.classList.remove("falsch","schuettel"));
+        if(ausgewaehlt) ausgewaehlt.classList.remove("aktiv");
+        ausgewaehlt = null;
+      },500);
+    }
+  });
+});
+
+function mischen(id){
+  const c=document.getElementById(id);
+  const a=[...c.children];
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  a.forEach(x=>c.appendChild(x));
+}
+mischen("bewegungen");
+mischen("diagramme");
+</script>
 </body>
 </html>
