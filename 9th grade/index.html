@@ -73,7 +73,26 @@ function scene(t,s,e=""){
 function buttons(a){$("controls").innerHTML="";a.forEach(x=>{let b=document.createElement("button");b.className="action";b.textContent=x[0];b.onclick=x[1];$("controls").appendChild(b)})}
 function map(n){for(let i=1;i<=4;i++){$("n"+i).classList.toggle("current",i===n);if(i<n)$("n"+i).classList.add("done")}}
 function intro(){map(1);scene("Das Tor zur Heldenreise","Vor dir liegt ein uralter Wald. Im Nebel bewegt sich etwas Großes. Du hörst eine schwere Keule über den Boden schleifen.");buttons([["🌲 In den Wald",troll]])}
-function ask(k,yes,no){P={k,yes,no};let q=Q[k];$("qtitle").textContent=q[0];$("qtext").textContent=q[1];$("feedback").className="feedback";$("answers").innerHTML=q[2].map((x,i)=>`<button onclick="answer(${i})">${String.fromCharCode(65+i)}) ${x}</button>`).join("");$("modal").classList.add("open")}
+function ask(k,yes,no){
+  P={k,yes,no};
+  let q=Q[k];
+  $("qtitle").textContent=q[0];
+  $("qtext").textContent=q[1];
+  $("feedback").className="feedback";
+
+  // Antworten zufällig mischen, dabei den ursprünglichen Index behalten
+  let answers=q[2].map((text,index)=>({text,index}));
+  for(let i=answers.length-1;i>0;i--){
+    let j=Math.floor(Math.random()*(i+1));
+    [answers[i],answers[j]]=[answers[j],answers[i]];
+  }
+
+  $("answers").innerHTML=answers.map((a,i)=>
+    `<button onclick="answer(${a.index})">${String.fromCharCode(65+i)}) ${a.text}</button>`
+  ).join("");
+
+  $("modal").classList.add("open");
+}
 function answer(i){let q=Q[P.k],ok=i===q[3];document.querySelectorAll("#answers button").forEach(b=>b.disabled=true);$("feedback").textContent=ok?"✅ Richtig! "+q[4]:"❌ Falsch. "+q[4];$("feedback").className="feedback show";if(ok){H.xp=Math.min(100,H.xp+q[5]);update()}setTimeout(()=>{$("modal").classList.remove("open");(ok?P.yes:P.no)()},1000)}
 function sound(f,d,type="sine"){try{let C=window.AudioContext||window.webkitAudioContext,c=new C,o=c.createOscillator(),g=c.createGain();o.type=type;o.frequency.value=f;g.gain.value=.05;o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+d)}catch(e){}}
 function damage(n){H.hp=Math.max(1,H.hp-n);update();$("hpbar").classList.remove("shake");void $("hpbar").offsetWidth;$("hpbar").classList.add("shake");sound(100,.35,"sawtooth");$("toast").textContent=`❤️ −${n} Lebenspunkte`;$("toast").classList.add("show");setTimeout(()=>$("toast").classList.remove("show"),900)}
