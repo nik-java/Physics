@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Bewegungsarten – interaktive Übung</title>
+
+<style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    table { border-collapse: collapse; width: 100%; max-width: 900px; }
+    th, td { border: 1px solid #444; padding: 10px; text-align: center; }
+    .icon { font-size: 40px; }
+    .correct { background-color: #8fff8f; }
+    .wrong { background-color: #ff8f8f; }
+</style>
+
+<script>
+function checkAnswer(checkbox, correct) {
+    const cell = checkbox.parentElement;
+
+    // Reset Farben
+    cell.classList.remove("correct", "wrong");
+
+    if (checkbox.checked) {
+        if (correct) {
+            cell.classList.add("correct");
+        } else {
+            cell.classList.add("wrong");
+        }
+    }
+}
+</script>
+
+</head>
+<body>
+
+<h1>Gleichförmige und beschleunigte Bewegungen</h1>
+<p>Setze ein Häkchen – richtig = grün, falsch = rot.</p>
+
+<table>
+    <tr>
+        <th>Situation</th>
+        <th>Symbol</th>
+        <th>Gleichförmig</th>
+        <th>Beschleunigt</th>
+    </tr>
+
+    <tr>
+        <td>Zug auf gerader Strecke</td>
+        <td class="icon">🚆</td>
+        <td><input type="checkbox" onclick="checkAnswer(this, true)"></td>
+        <td><input type="checkbox" onclick="checkAnswer(this, false)"></td>
+    </tr>
+
+    <tr>
+        <td>Startendes Flugzeug</td>
+        <td class="icon">✈️</td>
+        <td><input type="checkbox" onclick="checkAnswer(this, false)"></td>
+        <td><input type="checkbox" onclick="checkAnswer(this, true)"></td>
+    </tr>
+
+    <!-- Vertauscht: Freifall kommt jetzt hier -->
+    <tr>
+        <td>Freifall eines Apfels</td>
+        <td class="icon">🍎⬇️</td>
+        <td><input type="checkbox" onclick="checkAnswer(this, false)"></td>
+        <td><input type="checkbox" onclick="checkAnswer(this, true)"></td>
+    </tr>
+
+    <!-- Vertauscht: Rolltreppe kommt jetzt hier -->
+    <tr>
+        <td>Rolltreppe</td>
+        <td class="icon">⬆️⬇️</td>
+        <td><input type="checkbox" onclick="checkAnswer(this, true)"></td>
+        <td><input type="checkbox" onclick="checkAnswer(this, false)"></td>
+    </tr>
+
+    <tr>
+        <td>Auto mit Tempomat</td>
+        <td class="icon">🚗</td>
+        <td><input type="checkbox" onclick="checkAnswer(this, true)"></td>
+        <td><input type="checkbox" onclick="checkAnswer(this, false)"></td>
+    </tr>
+
+    <tr>
+        <td>Fahrrad beim Anfahren</td>
+        <td class="icon">🚴‍♂️</td>
+        <td><input type="checkbox" onclick="checkAnswer(this, false)"></td>
+        <td><input type="checkbox" onclick="checkAnswer(this, true)"></td>
+    </tr>
+
+</table>
+
+</body>
+</html>
