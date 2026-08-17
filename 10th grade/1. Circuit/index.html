@@ -1,1 +1,564 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Verzweigter Stromkreis – Interaktive Schaltung</title>
+<style>
+  :root{
+    --bg:#f1f5f9; --panel:#ffffff; --border:#dbe2ea; --ink:#1e293b; --sub:#64748b;
+    --accent:#2563eb; --accent2:#f59e0b; --danger:#dc2626;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:"Segoe UI",Roboto,Arial,sans-serif; background:var(--bg); color:var(--ink);
+    display:flex; flex-direction:column; height:100vh;
+  }
+  header{
+    padding:10px 18px; background:var(--panel); border-bottom:1px solid var(--border);
+  }
+  header h1{margin:0; font-size:1.15rem;}
+  header p{margin:4px 0 0; font-size:0.85rem; color:var(--sub); line-height:1.4;}
+  .layout{flex:1; display:flex; min-height:0;}
+  aside{
+    width:230px; background:var(--panel); border-right:1px solid var(--border);
+    padding:12px; overflow-y:auto; flex-shrink:0;
+  }
+  aside h2{font-size:0.8rem; text-transform:uppercase; letter-spacing:.04em; color:var(--sub); margin:14px 0 8px;}
+  aside h2:first-of-type{margin-top:0;}
+  .palette-item{
+    display:flex; align-items:center; gap:8px; padding:6px 8px; margin-bottom:6px;
+    border:1px solid var(--border); border-radius:8px; background:#f8fafc; cursor:grab;
+    user-select:none;
+  }
+  .palette-item:active{cursor:grabbing;}
+  .palette-item:hover{border-color:var(--accent); background:#eef4ff;}
+  .palette-item span{font-size:0.82rem; font-weight:500;}
+  main{flex:1; display:flex; flex-direction:column; min-width:0;}
+  .toolbar{
+    display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+    padding:8px 14px; background:var(--panel); border-bottom:1px solid var(--border);
+  }
+  .toolbar button{
+    font-size:0.82rem; padding:6px 12px; border-radius:7px; border:1px solid var(--border);
+    background:#f8fafc; cursor:pointer; color:var(--ink);
+  }
+  .toolbar button:hover{background:#eef4ff; border-color:var(--accent);}
+  .toolbar button.danger:hover{background:#fef2f2; border-color:var(--danger); color:var(--danger);}
+  .toolbar .sep{width:1px; height:20px; background:var(--border); margin:0 4px;}
+  .canvas-wrap{flex:1; overflow:auto; background:var(--bg); padding:10px;}
+  svg#canvas{background:#fff; border:1px solid var(--border); border-radius:10px; display:block;}
+  .terminal{cursor:crosshair;}
+  .terminal:hover{fill:var(--accent2) !important;}
+  .comp-hit{cursor:grab;}
+  .wire-hit{cursor:pointer;}
+  footer{padding:6px 16px; font-size:0.75rem; color:var(--sub); background:var(--panel); border-top:1px solid var(--border);}
+  .hint{font-size:0.78rem; color:var(--sub); line-height:1.5; margin-top:2px;}
+  .legend{margin-top:10px; padding:8px; background:#f8fafc; border:1px solid var(--border); border-radius:8px; font-size:0.76rem; color:var(--sub); line-height:1.5;}
+  .legend b{color:var(--ink);}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⚡ Verzweigter Stromkreis – Reihen- und Parallelschaltung</h1>
+  <p>Ziehe Bauteile links per Drag&amp;Drop in den Schaltungsbereich. Verbinde die kleinen runden Anschlüsse durch Klicken-und-Ziehen mit der Maus zu Drähten. Baue Reihen- und Parallelschaltungen – Amperemeter und Voltmeter zeigen live die korrekten Messwerte an.</p>
+</header>
+
+<div class="layout">
+  <aside>
+    <h2>Bauteile</h2>
+
+    <div class="palette-item" draggable="true" data-type="battery" data-value="9">
+      <svg width="46" height="26" viewBox="-40 -20 80 40">
+        <line x1="-40" y1="0" x2="-12" y2="0" stroke="#334155" stroke-width="3"/>
+        <line x1="-12" y1="-18" x2="-12" y2="18" stroke="#334155" stroke-width="3"/>
+        <line x1="8" y1="-9" x2="8" y2="9" stroke="#334155" stroke-width="6"/>
+        <line x1="8" y1="0" x2="40" y2="0" stroke="#334155" stroke-width="3"/>
+      </svg>
+      <span>Batterie 9 V</span>
+    </div>
+
+    <div class="palette-item" draggable="true" data-type="resistor" data-value="100">
+      <svg width="46" height="26" viewBox="-40 -20 80 40">
+        <path d="M -40,0 L -24,0 L -18,-14 L -6,14 L 6,-14 L 18,14 L 24,0 L 40,0" fill="none" stroke="#334155" stroke-width="3"/>
+      </svg>
+      <span>Widerstand 100 Ω</span>
+    </div>
+    <div class="palette-item" draggable="true" data-type="resistor" data-value="220">
+      <svg width="46" height="26" viewBox="-40 -20 80 40">
+        <path d="M -40,0 L -24,0 L -18,-14 L -6,14 L 6,-14 L 18,14 L 24,0 L 40,0" fill="none" stroke="#334155" stroke-width="3"/>
+      </svg>
+      <span>Widerstand 220 Ω</span>
+    </div>
+    <div class="palette-item" draggable="true" data-type="resistor" data-value="470">
+      <svg width="46" height="26" viewBox="-40 -20 80 40">
+        <path d="M -40,0 L -24,0 L -18,-14 L -6,14 L 6,-14 L 18,14 L 24,0 L 40,0" fill="none" stroke="#334155" stroke-width="3"/>
+      </svg>
+      <span>Widerstand 470 Ω</span>
+    </div>
+    <div class="palette-item" draggable="true" data-type="resistor" data-value="1000">
+      <svg width="46" height="26" viewBox="-40 -20 80 40">
+        <path d="M -40,0 L -24,0 L -18,-14 L -6,14 L 6,-14 L 18,14 L 24,0 L 40,0" fill="none" stroke="#334155" stroke-width="3"/>
+      </svg>
+      <span>Widerstand 1 kΩ</span>
+    </div>
+
+    <div class="palette-item" draggable="true" data-type="ammeter">
+      <svg width="46" height="26" viewBox="-40 -20 80 40">
+        <line x1="-40" y1="0" x2="-18" y2="0" stroke="#334155" stroke-width="3"/>
+        <line x1="18" y1="0" x2="40" y2="0" stroke="#334155" stroke-width="3"/>
+        <circle cx="0" cy="0" r="17" fill="#fff" stroke="#2563eb" stroke-width="3"/>
+        <text x="0" y="6" text-anchor="middle" font-size="16" font-weight="bold" fill="#2563eb">A</text>
+      </svg>
+      <span>Amperemeter</span>
+    </div>
+
+    <div class="palette-item" draggable="true" data-type="voltmeter">
+      <svg width="46" height="26" viewBox="-40 -20 80 40">
+        <line x1="-40" y1="0" x2="-18" y2="0" stroke="#334155" stroke-width="3"/>
+        <line x1="18" y1="0" x2="40" y2="0" stroke="#334155" stroke-width="3"/>
+        <circle cx="0" cy="0" r="17" fill="#fff" stroke="#dc2626" stroke-width="3"/>
+        <text x="0" y="6" text-anchor="middle" font-size="16" font-weight="bold" fill="#dc2626">V</text>
+      </svg>
+      <span>Voltmeter</span>
+    </div>
+
+    <div class="legend">
+      <b>Amperemeter (A):</b> immer in Reihe in den Stromkreis einbauen – misst die Stromstärke, die hindurchfließt.<br><br>
+      <b>Voltmeter (V):</b> immer parallel an ein Bauteil anschließen – misst die Spannung zwischen zwei Punkten.<br><br>
+      Bauteil <b>doppelklicken</b>, um es um 90° zu drehen. Anschluss anklicken &amp; zu einem anderen Anschluss ziehen = Draht. Bauteil/Draht anklicken = auswählen, dann <b>Entf</b> löschen.
+    </div>
+  </aside>
+
+  <main>
+    <div class="toolbar">
+      <button id="btnSeries">📐 Beispiel: Reihenschaltung laden</button>
+      <button id="btnParallel">🔀 Beispiel: Parallelschaltung laden</button>
+      <div class="sep"></div>
+      <button id="btnRotate">↻ Drehen</button>
+      <button id="btnDelete" class="danger">🗑 Löschen</button>
+      <div class="sep"></div>
+      <button id="btnClear" class="danger">Alles löschen</button>
+    </div>
+    <div class="canvas-wrap">
+      <svg id="canvas" width="900" height="480" viewBox="0 0 900 480">
+        <defs>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <circle cx="1" cy="1" r="1.4" fill="#cbd5e1"/>
+          </pattern>
+        </defs>
+        <rect id="bg" x="0" y="0" width="900" height="480" fill="url(#grid)"/>
+        <g id="wiresLayer"></g>
+        <g id="componentsLayer"></g>
+        <g id="tempLayer"></g>
+      </svg>
+    </div>
+  </main>
+</div>
+
+<footer>Tipp: Baue die Bauteile in einer Reihe für eine <b>Reihenschaltung</b>, oder verzweige mehrere Widerstände zwischen zwei gemeinsamen Knoten für eine <b>Parallelschaltung</b>. Nutze die Beispiel-Buttons als Vorlage.</footer>
+
+<script>
+// ---------- Datenmodell ----------
+let components = [];   // {id, type, x, y, rot, value}
+let wires = [];         // {id, a:{c,t}, b:{c,t}}
+let idCounter = 1;
+let selected = null;    // {type:'component'|'wire', id}
+let pendingWire = null; // {c,t,curX,curY}
+
+const svg = document.getElementById('canvas');
+
+function getComp(id){ return components.find(c=>c.id===id); }
+
+function terminalPos(comp, idx){
+  const local = idx===0 ? {x:-40,y:0} : {x:40,y:0};
+  const rad = (comp.rot||0) * Math.PI/180;
+  const rx = local.x*Math.cos(rad) - local.y*Math.sin(rad);
+  const ry = local.x*Math.sin(rad) + local.y*Math.cos(rad);
+  return {x: comp.x+rx, y: comp.y+ry};
+}
+
+function clientToSvg(evt){
+  const pt = svg.createSVGPoint();
+  pt.x = evt.clientX; pt.y = evt.clientY;
+  return pt.matrixTransform(svg.getScreenCTM().inverse());
+}
+
+// ---------- Schaltungs-Löser (Modified Nodal Analysis) ----------
+function solveCircuit(){
+  const parent = {};
+  function key(c,t){ return c+'_'+t; }
+  components.forEach(c=>{ parent[key(c.id,0)]=key(c.id,0); parent[key(c.id,1)]=key(c.id,1); });
+  function find(k){ while(parent[k]!==k){ parent[k]=parent[parent[k]]; k=parent[k]; } return k; }
+  function union(a,b){ const ra=find(a), rb=find(b); if(ra!==rb) parent[ra]=rb; }
+  wires.forEach(w=>{ union(key(w.a.c,w.a.t), key(w.b.c,w.b.t)); });
+
+  const battery = components.find(c=>c.type==='battery');
+  if(!battery) return {ok:false};
+
+  const rootToNode = {};
+  const groundRoot = find(key(battery.id,1));
+  rootToNode[groundRoot] = 0;
+  let nextIndex = 1;
+  components.forEach(c=>{
+    [0,1].forEach(t=>{
+      const r = find(key(c.id,t));
+      if(!(r in rootToNode)) rootToNode[r] = nextIndex++;
+    });
+  });
+  const N = nextIndex;
+  const size = (N-1) + 1;
+  const A = Array.from({length:size}, ()=> new Array(size).fill(0));
+  const b = new Array(size).fill(0);
+  function nodeOf(c,t){ return rootToNode[find(key(c,t))]; }
+  function stampR(p,q,g){
+    if(p!==0) A[p-1][p-1]+=g;
+    if(q!==0) A[q-1][q-1]+=g;
+    if(p!==0 && q!==0){ A[p-1][q-1]-=g; A[q-1][p-1]-=g; }
+  }
+  components.forEach(c=>{
+    if(c.type==='battery') return;
+    let R;
+    if(c.type==='ammeter') R=0.01;
+    else if(c.type==='voltmeter') R=1e7;
+    else R=c.value;
+    stampR(nodeOf(c.id,0), nodeOf(c.id,1), 1/R);
+  });
+  for(let i=0;i<N-1;i++){ A[i][i]+=1e-9; }
+  const vp = nodeOf(battery.id,0), vn = nodeOf(battery.id,1);
+  const srcIdx = N-1;
+  if(vp!==0){ A[vp-1][srcIdx]+=1; A[srcIdx][vp-1]+=1; }
+  if(vn!==0){ A[vn-1][srcIdx]-=1; A[srcIdx][vn-1]-=1; }
+  b[srcIdx] = battery.value;
+
+  const x = gaussSolve(A,b);
+  if(!x) return {ok:false};
+  function getV(node){ return node===0?0:x[node-1]; }
+  return {ok:true, getV, nodeOf};
+}
+
+function gaussSolve(A,b){
+  const n=A.length;
+  const M = A.map((row,i)=>[...row, b[i]]);
+  for(let col=0; col<n; col++){
+    let piv=col;
+    for(let r=col+1;r<n;r++){ if(Math.abs(M[r][col])>Math.abs(M[piv][col])) piv=r; }
+    if(Math.abs(M[piv][col])<1e-12) continue;
+    [M[col],M[piv]]=[M[piv],M[col]];
+    for(let r=0;r<n;r++){
+      if(r===col) continue;
+      const f = M[r][col]/M[col][col];
+      if(f===0) continue;
+      for(let cc=col; cc<=n; cc++) M[r][cc]-=f*M[col][cc];
+    }
+  }
+  const x=new Array(n).fill(0);
+  for(let i=0;i<n;i++){ x[i] = Math.abs(M[i][i])>1e-9 ? M[i][n]/M[i][i] : 0; }
+  return x;
+}
+
+// ---------- Rendering ----------
+function bodyMarkup(c){
+  if(c.type==='battery'){
+    return `
+      <line x1="-40" y1="0" x2="-12" y2="0" stroke="#334155" stroke-width="3"/>
+      <line x1="-12" y1="-18" x2="-12" y2="18" stroke="#334155" stroke-width="3"/>
+      <line x1="8" y1="-9" x2="8" y2="9" stroke="#334155" stroke-width="6"/>
+      <line x1="8" y1="0" x2="40" y2="0" stroke="#334155" stroke-width="3"/>
+      <text x="-12" y="-24" text-anchor="middle" font-size="14" fill="#16a34a">+</text>
+      <text x="8" y="-24" text-anchor="middle" font-size="14" fill="#dc2626">–</text>`;
+  }
+  if(c.type==='resistor'){
+    return `<path d="M -40,0 L -24,0 L -18,-14 L -6,14 L 6,-14 L 18,14 L 24,0 L 40,0" fill="none" stroke="#334155" stroke-width="3" stroke-linejoin="round"/>`;
+  }
+  if(c.type==='ammeter' || c.type==='voltmeter'){
+    const letter = c.type==='ammeter' ? 'A' : 'V';
+    const color = c.type==='ammeter' ? '#2563eb' : '#dc2626';
+    return `
+      <line x1="-40" y1="0" x2="-18" y2="0" stroke="#334155" stroke-width="3"/>
+      <line x1="18" y1="0" x2="40" y2="0" stroke="#334155" stroke-width="3"/>
+      <circle cx="0" cy="0" r="18" fill="#fff" stroke="${color}" stroke-width="3"/>
+      <text x="0" y="6" text-anchor="middle" font-size="18" font-weight="bold" fill="${color}">${letter}</text>`;
+  }
+  return '';
+}
+
+function buildComponentSvg(c){
+  const sel = selected && selected.type==='component' && selected.id===c.id;
+  const selRect = sel ? `<rect x="-46" y="-26" width="92" height="52" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="5,3" rx="8"/>` : '';
+  return `<g class="comp-g" data-id="${c.id}" transform="translate(${c.x},${c.y}) rotate(${c.rot||0})">
+      ${selRect}
+      <rect class="comp-hit" x="-44" y="-24" width="88" height="48" fill="transparent"/>
+      ${bodyMarkup(c)}
+      <circle class="terminal" data-c="${c.id}" data-t="0" cx="-40" cy="0" r="7" fill="#0ea5e9" stroke="#fff" stroke-width="2"/>
+      <circle class="terminal" data-c="${c.id}" data-t="1" cx="40" cy="0" r="7" fill="#0ea5e9" stroke="#fff" stroke-width="2"/>
+    </g>`;
+}
+
+function renderAll(){
+  const solve = solveCircuit();
+
+  // Drähte
+  let wiresHtml='';
+  wires.forEach(w=>{
+    const ca=getComp(w.a.c), cb=getComp(w.b.c);
+    if(!ca||!cb) return;
+    const p1=terminalPos(ca,w.a.t), p2=terminalPos(cb,w.b.t);
+    const sel = selected && selected.type==='wire' && selected.id===w.id;
+    wiresHtml += `<g class="wire-g" data-id="${w.id}">
+        <line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="transparent" stroke-width="12" class="wire-hit"/>
+        <line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="${sel?'#f59e0b':'#334155'}" stroke-width="${sel?4:3}" stroke-linecap="round"/>
+      </g>`;
+  });
+  document.getElementById('wiresLayer').innerHTML = wiresHtml;
+
+  // Temporärer Draht beim Ziehen
+  let tempHtml='';
+  if(pendingWire){
+    const startComp = getComp(pendingWire.c);
+    if(startComp){
+      const start = terminalPos(startComp, pendingWire.t);
+      tempHtml = `<line x1="${start.x}" y1="${start.y}" x2="${pendingWire.curX}" y2="${pendingWire.curY}" stroke="#f59e0b" stroke-width="3" stroke-dasharray="6,4"/>`;
+    }
+  }
+  document.getElementById('tempLayer').innerHTML = tempHtml;
+
+  // Bauteile + Labels + Messwerte
+  let compHtml='';
+  components.forEach(c=>{ compHtml += buildComponentSvg(c); });
+
+  components.forEach(c=>{
+    const lx = (c.rot===90) ? c.x+30 : c.x;
+    const ly = (c.rot===90) ? c.y : c.y+34;
+    let labelText='';
+    if(c.type==='battery') labelText = c.value+' V';
+    else if(c.type==='resistor') labelText = c.value+' Ω';
+    if(labelText) compHtml += `<text x="${lx}" y="${ly}" text-anchor="middle" font-size="12" fill="#475569">${labelText}</text>`;
+
+    if(c.type==='ammeter' || c.type==='voltmeter'){
+      let reading='–';
+      if(solve.ok){
+        const p = solve.getV(solve.nodeOf(c.id,0));
+        const q = solve.getV(solve.nodeOf(c.id,1));
+        if(c.type==='ammeter'){
+          reading = (Math.abs(p-q)/0.01*1000).toFixed(1)+' mA';
+        } else {
+          reading = Math.abs(p-q).toFixed(2)+' V';
+        }
+      }
+      const rx = c.rot===90 ? c.x+36 : c.x;
+      const ry = c.rot===90 ? c.y-24 : c.y-30;
+      compHtml += `<text x="${rx}" y="${ry}" text-anchor="middle" font-size="13" font-weight="bold" fill="#0f172a">${reading}</text>`;
+    }
+  });
+
+  document.getElementById('componentsLayer').innerHTML = compHtml;
+  attachListeners();
+}
+
+// ---------- Interaktion ----------
+function selectItem(type,id){ selected = type ? {type,id} : null; }
+
+function onCompMouseDown(evt, comp){
+  evt.stopPropagation();
+  const startPt = clientToSvg(evt);
+  const startX=comp.x, startY=comp.y;
+  let moved=false;
+  function onMove(e2){
+    const p2=clientToSvg(e2);
+    const dx=p2.x-startPt.x, dy=p2.y-startPt.y;
+    if(Math.abs(dx)>3||Math.abs(dy)>3) moved=true;
+    comp.x = Math.round((startX+dx)/40)*40;
+    comp.y = Math.round((startY+dy)/40)*40;
+    renderAll();
+  }
+  function onUp(){
+    document.removeEventListener('mousemove',onMove);
+    document.removeEventListener('mouseup',onUp);
+    if(!moved){ selectItem('component', comp.id); renderAll(); }
+  }
+  document.addEventListener('mousemove',onMove);
+  document.addEventListener('mouseup',onUp);
+}
+
+function findTerminalNear(x,y,excludeC,excludeT){
+  let best=null, bestD=14;
+  components.forEach(c=>{
+    [0,1].forEach(t=>{
+      if(c.id===excludeC && t===excludeT) return;
+      const p=terminalPos(c,t);
+      const d=Math.hypot(p.x-x,p.y-y);
+      if(d<bestD){ bestD=d; best={c:c.id,t}; }
+    });
+  });
+  return best;
+}
+
+function onTermMouseDown(evt, comp, t){
+  evt.stopPropagation();
+  evt.preventDefault();
+  const start = terminalPos(comp,t);
+  pendingWire = {c:comp.id, t, curX:start.x, curY:start.y};
+  renderAll();
+  function onMove(e2){
+    const p=clientToSvg(e2);
+    pendingWire.curX=p.x; pendingWire.curY=p.y;
+    renderAll();
+  }
+  function onUp(e2){
+    document.removeEventListener('mousemove',onMove);
+    document.removeEventListener('mouseup',onUp);
+    const p=clientToSvg(e2);
+    const target = findTerminalNear(p.x,p.y, comp.id, t);
+    if(target){
+      wires.push({id:'w'+(idCounter++), a:{c:comp.id,t}, b:{c:target.c,t:target.t}});
+    }
+    pendingWire=null;
+    renderAll();
+  }
+  document.addEventListener('mousemove',onMove);
+  document.addEventListener('mouseup',onUp);
+}
+
+function attachListeners(){
+  document.querySelectorAll('.comp-hit').forEach(el=>{
+    const id = el.closest('.comp-g').dataset.id;
+    el.addEventListener('mousedown', e=>onCompMouseDown(e, getComp(id)));
+    el.addEventListener('dblclick', e=>{
+      e.stopPropagation();
+      const c=getComp(id);
+      c.rot = (c.rot||0)===0 ? 90 : 0;
+      renderAll();
+    });
+  });
+  document.querySelectorAll('.terminal').forEach(el=>{
+    el.addEventListener('mousedown', e=>{
+      const c=getComp(el.dataset.c);
+      const t=parseInt(el.dataset.t);
+      onTermMouseDown(e,c,t);
+    });
+  });
+  document.querySelectorAll('.wire-hit').forEach(el=>{
+    el.addEventListener('click', e=>{
+      e.stopPropagation();
+      selectItem('wire', el.closest('.wire-g').dataset.id);
+      renderAll();
+    });
+  });
+}
+
+document.getElementById('bg').addEventListener('click', ()=>{ selectItem(null); renderAll(); });
+
+// ---------- Drag & Drop aus Palette ----------
+document.querySelectorAll('.palette-item').forEach(el=>{
+  el.addEventListener('dragstart', e=>{
+    e.dataTransfer.setData('text/plain', JSON.stringify({
+      type: el.dataset.type,
+      value: el.dataset.value ? parseFloat(el.dataset.value) : undefined
+    }));
+  });
+});
+svg.addEventListener('dragover', e=>e.preventDefault());
+svg.addEventListener('drop', e=>{
+  e.preventDefault();
+  const raw = e.dataTransfer.getData('text/plain');
+  if(!raw) return;
+  const data = JSON.parse(raw);
+  const pt = clientToSvg(e);
+  const gx = Math.round(pt.x/40)*40;
+  const gy = Math.round(pt.y/40)*40;
+  addComponent(data.type, gx, gy, data.value);
+});
+
+function addComponent(type,x,y,value){
+  const id = 'c'+(idCounter++);
+  let v = value;
+  if(type==='battery' && v===undefined) v=9;
+  components.push({id,type,x,y,rot:0,value:v});
+  renderAll();
+}
+
+// ---------- Toolbar ----------
+function deleteSelected(){
+  if(!selected) return;
+  if(selected.type==='component'){
+    components = components.filter(c=>c.id!==selected.id);
+    wires = wires.filter(w=>w.a.c!==selected.id && w.b.c!==selected.id);
+  } else if(selected.type==='wire'){
+    wires = wires.filter(w=>w.id!==selected.id);
+  }
+  selected=null;
+  renderAll();
+}
+document.getElementById('btnDelete').onclick = deleteSelected;
+document.getElementById('btnRotate').onclick = ()=>{
+  if(selected && selected.type==='component'){
+    const c=getComp(selected.id);
+    c.rot = (c.rot||0)===0 ? 90 : 0;
+    renderAll();
+  }
+};
+document.getElementById('btnClear').onclick = ()=>{
+  if(confirm('Wirklich die gesamte Schaltung löschen?')){
+    components=[]; wires=[]; selected=null; renderAll();
+  }
+};
+document.addEventListener('keydown', e=>{
+  if((e.key==='Delete'||e.key==='Backspace') && selected){
+    e.preventDefault();
+    deleteSelected();
+  }
+});
+
+// ---------- Beispiel-Schaltungen ----------
+function loadSeriesPreset(){
+  components = [
+    {id:'battery1', type:'battery', x:120, y:320, rot:0, value:9},
+    {id:'r100_1',   type:'resistor', x:280, y:160, rot:0, value:100},
+    {id:'r220_1',   type:'resistor', x:440, y:160, rot:0, value:220},
+    {id:'amm1',     type:'ammeter', x:600, y:160, rot:0},
+    {id:'volt1',    type:'voltmeter', x:280, y:40, rot:0}
+  ];
+  wires = [
+    {id:'w1', a:{c:'battery1',t:1}, b:{c:'r100_1',t:0}},
+    {id:'w2', a:{c:'r100_1',t:1},   b:{c:'r220_1',t:0}},
+    {id:'w3', a:{c:'r220_1',t:1},   b:{c:'amm1',t:0}},
+    {id:'w4', a:{c:'amm1',t:1},     b:{c:'battery1',t:0}},
+    {id:'w5', a:{c:'volt1',t:0},    b:{c:'r100_1',t:0}},
+    {id:'w6', a:{c:'volt1',t:1},    b:{c:'r100_1',t:1}}
+  ];
+  idCounter = 100;
+  selected = null;
+  renderAll();
+}
+
+function loadParallelPreset(){
+  components = [
+    {id:'battery2', type:'battery', x:120, y:300, rot:0, value:9},
+    {id:'amm2',     type:'ammeter', x:300, y:180, rot:0},
+    {id:'r100_2',   type:'resistor', x:480, y:180, rot:90, value:100},
+    {id:'r220_2',   type:'resistor', x:620, y:180, rot:90, value:220},
+    {id:'volt2',    type:'voltmeter', x:760, y:180, rot:90}
+  ];
+  wires = [
+    {id:'w1', a:{c:'battery2',t:0}, b:{c:'amm2',t:0}},
+    {id:'w2', a:{c:'amm2',t:1},     b:{c:'r100_2',t:0}},
+    {id:'w3', a:{c:'amm2',t:1},     b:{c:'r220_2',t:0}},
+    {id:'w4', a:{c:'amm2',t:1},     b:{c:'volt2',t:0}},
+    {id:'w5', a:{c:'r100_2',t:1},   b:{c:'battery2',t:1}},
+    {id:'w6', a:{c:'r220_2',t:1},   b:{c:'battery2',t:1}},
+    {id:'w7', a:{c:'volt2',t:1},    b:{c:'battery2',t:1}}
+  ];
+  idCounter = 200;
+  selected = null;
+  renderAll();
+}
+
+document.getElementById('btnSeries').onclick = loadSeriesPreset;
+document.getElementById('btnParallel').onclick = loadParallelPreset;
+
+renderAll();
+</script>
+</body>
+</html>
 
