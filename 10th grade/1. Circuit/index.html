@@ -2,13 +2,15 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Verzweigter Stromkreis – Interaktive Schaltung</title>
 <style>
   :root{
     --bg:#f1f5f9; --panel:#ffffff; --border:#dbe2ea; --ink:#1e293b; --sub:#64748b;
     --accent:#2563eb; --accent2:#f59e0b; --danger:#dc2626;
   }
-  *{box-sizing:border-box;}
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  html,body{overscroll-behavior:contain;}
   body{
     margin:0; font-family:"Segoe UI",Roboto,Arial,sans-serif; background:var(--bg); color:var(--ink);
     display:flex; flex-direction:column; height:100vh;
@@ -26,11 +28,11 @@
   aside h2{font-size:0.8rem; text-transform:uppercase; letter-spacing:.04em; color:var(--sub); margin:14px 0 8px;}
   aside h2:first-of-type{margin-top:0;}
   .palette-item{
-    display:flex; align-items:center; gap:8px; padding:6px 8px; margin-bottom:6px;
+    display:flex; align-items:center; gap:8px; padding:8px 8px; margin-bottom:6px;
     border:1px solid var(--border); border-radius:8px; background:#f8fafc; cursor:grab;
-    user-select:none;
+    user-select:none; touch-action:none;
   }
-  .palette-item:active{cursor:grabbing;}
+  .palette-item:active{cursor:grabbing; border-color:var(--accent);}
   .palette-item:hover{border-color:var(--accent); background:#eef4ff;}
   .palette-item span{font-size:0.82rem; font-weight:500;}
   main{flex:1; display:flex; flex-direction:column; min-width:0;}
@@ -39,36 +41,55 @@
     padding:8px 14px; background:var(--panel); border-bottom:1px solid var(--border);
   }
   .toolbar button{
-    font-size:0.82rem; padding:6px 12px; border-radius:7px; border:1px solid var(--border);
-    background:#f8fafc; cursor:pointer; color:var(--ink);
+    font-size:0.82rem; padding:8px 12px; border-radius:7px; border:1px solid var(--border);
+    background:#f8fafc; cursor:pointer; color:var(--ink); touch-action:manipulation;
   }
   .toolbar button:hover{background:#eef4ff; border-color:var(--accent);}
   .toolbar button.danger:hover{background:#fef2f2; border-color:var(--danger); color:var(--danger);}
   .toolbar .sep{width:1px; height:20px; background:var(--border); margin:0 4px;}
   .canvas-wrap{flex:1; overflow:auto; background:var(--bg); padding:10px;}
-  svg#canvas{background:#fff; border:1px solid var(--border); border-radius:10px; display:block;}
-  .terminal{cursor:crosshair;}
+  svg#canvas{
+    background:#fff; border:1px solid var(--border); border-radius:10px; display:block;
+    width:100%; height:auto; max-width:900px; touch-action:none;
+  }
+  .terminal{cursor:crosshair; touch-action:none;}
   .terminal:hover{fill:var(--accent2) !important;}
-  .comp-hit{cursor:grab;}
-  .wire-hit{cursor:pointer;}
+  .comp-hit{cursor:grab; touch-action:none;}
+  .wire-hit{cursor:pointer; touch-action:none;}
   footer{padding:6px 16px; font-size:0.75rem; color:var(--sub); background:var(--panel); border-top:1px solid var(--border);}
-  .hint{font-size:0.78rem; color:var(--sub); line-height:1.5; margin-top:2px;}
   .legend{margin-top:10px; padding:8px; background:#f8fafc; border:1px solid var(--border); border-radius:8px; font-size:0.76rem; color:var(--sub); line-height:1.5;}
   .legend b{color:var(--ink);}
+  .drag-ghost{
+    position:fixed; z-index:1000; pointer-events:none; background:#fff; color:var(--ink);
+    border:1px solid var(--accent); border-radius:6px; padding:5px 10px; font-size:0.8rem;
+    box-shadow:0 4px 10px rgba(0,0,0,.15); transform:translate(-50%,-130%);
+  }
+
+  @media (max-width: 860px){
+    .layout{flex-direction:column;}
+    aside{
+      width:100%; height:auto; max-height:none; display:flex; flex-direction:row;
+      overflow-x:auto; overflow-y:hidden; gap:8px; padding:10px;
+      border-right:none; border-bottom:1px solid var(--border);
+    }
+    aside h2, .legend{display:none;}
+    .palette-item{flex:0 0 auto; margin-bottom:0; white-space:nowrap;}
+    header p{display:none;}
+  }
 </style>
 </head>
 <body>
 
 <header>
   <h1>⚡ Verzweigter Stromkreis – Reihen- und Parallelschaltung</h1>
-  <p>Ziehe Bauteile links per Drag&amp;Drop in den Schaltungsbereich. Verbinde die kleinen runden Anschlüsse durch Klicken-und-Ziehen mit der Maus zu Drähten. Baue Reihen- und Parallelschaltungen – Amperemeter und Voltmeter zeigen live die korrekten Messwerte an.</p>
+  <p>Ziehe Bauteile links in den Schaltungsbereich. Tippe/klicke einen Anschluss an und ziehe zu einem anderen Anschluss, um ein Kabel zu verlegen – Kabel verlaufen automatisch nur waagerecht/senkrecht (rechtwinklig). Baue Reihen- und Parallelschaltungen – Amperemeter und Voltmeter zeigen live die korrekten Messwerte an. Funktioniert mit Maus und auf dem Tablet.</p>
 </header>
 
 <div class="layout">
   <aside>
     <h2>Bauteile</h2>
 
-    <div class="palette-item" draggable="true" data-type="battery" data-value="9">
+    <div class="palette-item" data-type="battery" data-value="9">
       <svg width="46" height="26" viewBox="-40 -20 80 40">
         <line x1="-40" y1="0" x2="-12" y2="0" stroke="#334155" stroke-width="3"/>
         <line x1="-12" y1="-18" x2="-12" y2="18" stroke="#334155" stroke-width="3"/>
@@ -78,32 +99,32 @@
       <span>Batterie 9 V</span>
     </div>
 
-    <div class="palette-item" draggable="true" data-type="resistor" data-value="100">
+    <div class="palette-item" data-type="resistor" data-value="100">
       <svg width="46" height="26" viewBox="-40 -20 80 40">
-        <path d="M -40,0 L -24,0 L -18,-14 L -6,14 L 6,-14 L 18,14 L 24,0 L 40,0" fill="none" stroke="#334155" stroke-width="3"/>
+        <line x1="-40" y1="0" x2="-20" y2="0" stroke="#334155" stroke-width="3"/><rect x="-20" y="-11" width="40" height="22" rx="2" fill="#fff" stroke="#334155" stroke-width="3"/><line x1="20" y1="0" x2="40" y2="0" stroke="#334155" stroke-width="3"/>
       </svg>
       <span>Widerstand 100 Ω</span>
     </div>
-    <div class="palette-item" draggable="true" data-type="resistor" data-value="220">
+    <div class="palette-item" data-type="resistor" data-value="220">
       <svg width="46" height="26" viewBox="-40 -20 80 40">
-        <path d="M -40,0 L -24,0 L -18,-14 L -6,14 L 6,-14 L 18,14 L 24,0 L 40,0" fill="none" stroke="#334155" stroke-width="3"/>
+        <line x1="-40" y1="0" x2="-20" y2="0" stroke="#334155" stroke-width="3"/><rect x="-20" y="-11" width="40" height="22" rx="2" fill="#fff" stroke="#334155" stroke-width="3"/><line x1="20" y1="0" x2="40" y2="0" stroke="#334155" stroke-width="3"/>
       </svg>
       <span>Widerstand 220 Ω</span>
     </div>
-    <div class="palette-item" draggable="true" data-type="resistor" data-value="470">
+    <div class="palette-item" data-type="resistor" data-value="470">
       <svg width="46" height="26" viewBox="-40 -20 80 40">
-        <path d="M -40,0 L -24,0 L -18,-14 L -6,14 L 6,-14 L 18,14 L 24,0 L 40,0" fill="none" stroke="#334155" stroke-width="3"/>
+        <line x1="-40" y1="0" x2="-20" y2="0" stroke="#334155" stroke-width="3"/><rect x="-20" y="-11" width="40" height="22" rx="2" fill="#fff" stroke="#334155" stroke-width="3"/><line x1="20" y1="0" x2="40" y2="0" stroke="#334155" stroke-width="3"/>
       </svg>
       <span>Widerstand 470 Ω</span>
     </div>
-    <div class="palette-item" draggable="true" data-type="resistor" data-value="1000">
+    <div class="palette-item" data-type="resistor" data-value="1000">
       <svg width="46" height="26" viewBox="-40 -20 80 40">
-        <path d="M -40,0 L -24,0 L -18,-14 L -6,14 L 6,-14 L 18,14 L 24,0 L 40,0" fill="none" stroke="#334155" stroke-width="3"/>
+        <line x1="-40" y1="0" x2="-20" y2="0" stroke="#334155" stroke-width="3"/><rect x="-20" y="-11" width="40" height="22" rx="2" fill="#fff" stroke="#334155" stroke-width="3"/><line x1="20" y1="0" x2="40" y2="0" stroke="#334155" stroke-width="3"/>
       </svg>
       <span>Widerstand 1 kΩ</span>
     </div>
 
-    <div class="palette-item" draggable="true" data-type="ammeter">
+    <div class="palette-item" data-type="ammeter">
       <svg width="46" height="26" viewBox="-40 -20 80 40">
         <line x1="-40" y1="0" x2="-18" y2="0" stroke="#334155" stroke-width="3"/>
         <line x1="18" y1="0" x2="40" y2="0" stroke="#334155" stroke-width="3"/>
@@ -113,7 +134,7 @@
       <span>Amperemeter</span>
     </div>
 
-    <div class="palette-item" draggable="true" data-type="voltmeter">
+    <div class="palette-item" data-type="voltmeter">
       <svg width="46" height="26" viewBox="-40 -20 80 40">
         <line x1="-40" y1="0" x2="-18" y2="0" stroke="#334155" stroke-width="3"/>
         <line x1="18" y1="0" x2="40" y2="0" stroke="#334155" stroke-width="3"/>
@@ -126,7 +147,7 @@
     <div class="legend">
       <b>Amperemeter (A):</b> immer in Reihe in den Stromkreis einbauen – misst die Stromstärke, die hindurchfließt.<br><br>
       <b>Voltmeter (V):</b> immer parallel an ein Bauteil anschließen – misst die Spannung zwischen zwei Punkten.<br><br>
-      Bauteil <b>doppelklicken</b>, um es um 90° zu drehen. Anschluss anklicken &amp; zu einem anderen Anschluss ziehen = Draht. Bauteil/Draht anklicken = auswählen, dann <b>Entf</b> löschen.
+      Bauteil <b>doppelklicken / doppelt antippen</b>, um es um 90° zu drehen. Kabel verlaufen automatisch rechtwinklig. Bauteil/Kabel antippen = auswählen, dann „Löschen" oder Entf-Taste.
     </div>
   </aside>
 
@@ -182,6 +203,12 @@ function clientToSvg(evt){
   const pt = svg.createSVGPoint();
   pt.x = evt.clientX; pt.y = evt.clientY;
   return pt.matrixTransform(svg.getScreenCTM().inverse());
+}
+
+// Rechtwinklige Kabelführung (nur waagerechte/senkrechte Segmente -> "Rechtecke")
+function wirePathD(p1, p2){
+  const midX = (p1.x + p2.x) / 2;
+  return `M ${p1.x} ${p1.y} L ${midX} ${p1.y} L ${midX} ${p2.y} L ${p2.x} ${p2.y}`;
 }
 
 // ---------- Schaltungs-Löser (Modified Nodal Analysis) ----------
@@ -269,7 +296,7 @@ function bodyMarkup(c){
       <text x="8" y="-24" text-anchor="middle" font-size="14" fill="#dc2626">–</text>`;
   }
   if(c.type==='resistor'){
-    return `<path d="M -40,0 L -24,0 L -18,-14 L -6,14 L 6,-14 L 18,14 L 24,0 L 40,0" fill="none" stroke="#334155" stroke-width="3" stroke-linejoin="round"/>`;
+    return `<line x1="-40" y1="0" x2="-20" y2="0" stroke="#334155" stroke-width="3"/><rect x="-20" y="-11" width="40" height="22" rx="2" fill="#fff" stroke="#334155" stroke-width="3"/><line x1="20" y1="0" x2="40" y2="0" stroke="#334155" stroke-width="3"/>`;
   }
   if(c.type==='ammeter' || c.type==='voltmeter'){
     const letter = c.type==='ammeter' ? 'A' : 'V';
@@ -288,37 +315,39 @@ function buildComponentSvg(c){
   const selRect = sel ? `<rect x="-46" y="-26" width="92" height="52" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="5,3" rx="8"/>` : '';
   return `<g class="comp-g" data-id="${c.id}" transform="translate(${c.x},${c.y}) rotate(${c.rot||0})">
       ${selRect}
-      <rect class="comp-hit" x="-44" y="-24" width="88" height="48" fill="transparent"/>
+      <rect class="comp-hit" x="-46" y="-26" width="92" height="52" fill="transparent"/>
       ${bodyMarkup(c)}
-      <circle class="terminal" data-c="${c.id}" data-t="0" cx="-40" cy="0" r="7" fill="#0ea5e9" stroke="#fff" stroke-width="2"/>
-      <circle class="terminal" data-c="${c.id}" data-t="1" cx="40" cy="0" r="7" fill="#0ea5e9" stroke="#fff" stroke-width="2"/>
+      <circle class="terminal" data-c="${c.id}" data-t="0" cx="-40" cy="0" r="9" fill="#0ea5e9" stroke="#fff" stroke-width="2"/>
+      <circle class="terminal" data-c="${c.id}" data-t="1" cx="40" cy="0" r="9" fill="#0ea5e9" stroke="#fff" stroke-width="2"/>
     </g>`;
 }
 
 function renderAll(){
   const solve = solveCircuit();
 
-  // Drähte
+  // Kabel
   let wiresHtml='';
   wires.forEach(w=>{
     const ca=getComp(w.a.c), cb=getComp(w.b.c);
     if(!ca||!cb) return;
     const p1=terminalPos(ca,w.a.t), p2=terminalPos(cb,w.b.t);
+    const d = wirePathD(p1,p2);
     const sel = selected && selected.type==='wire' && selected.id===w.id;
     wiresHtml += `<g class="wire-g" data-id="${w.id}">
-        <line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="transparent" stroke-width="12" class="wire-hit"/>
-        <line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="${sel?'#f59e0b':'#334155'}" stroke-width="${sel?4:3}" stroke-linecap="round"/>
+        <path d="${d}" fill="none" stroke="transparent" stroke-width="16" class="wire-hit"/>
+        <path d="${d}" fill="none" stroke="${sel?'#f59e0b':'#334155'}" stroke-width="${sel?4:3}" stroke-linecap="round" stroke-linejoin="round"/>
       </g>`;
   });
   document.getElementById('wiresLayer').innerHTML = wiresHtml;
 
-  // Temporärer Draht beim Ziehen
+  // Temporäres Kabel beim Ziehen
   let tempHtml='';
   if(pendingWire){
     const startComp = getComp(pendingWire.c);
     if(startComp){
       const start = terminalPos(startComp, pendingWire.t);
-      tempHtml = `<line x1="${start.x}" y1="${start.y}" x2="${pendingWire.curX}" y2="${pendingWire.curY}" stroke="#f59e0b" stroke-width="3" stroke-dasharray="6,4"/>`;
+      const d = wirePathD(start, {x:pendingWire.curX, y:pendingWire.curY});
+      tempHtml = `<path d="${d}" fill="none" stroke="#f59e0b" stroke-width="3" stroke-dasharray="6,4" stroke-linecap="round" stroke-linejoin="round"/>`;
     }
   }
   document.getElementById('tempLayer').innerHTML = tempHtml;
@@ -356,15 +385,18 @@ function renderAll(){
   attachListeners();
 }
 
-// ---------- Interaktion ----------
+// ---------- Interaktion (Pointer Events: Maus + Touch/Tablet) ----------
 function selectItem(type,id){ selected = type ? {type,id} : null; }
 
-function onCompMouseDown(evt, comp){
+function onCompPointerDown(evt, comp){
   evt.stopPropagation();
+  evt.preventDefault();
+  try{ document.documentElement.setPointerCapture(evt.pointerId); }catch(err){}
   const startPt = clientToSvg(evt);
   const startX=comp.x, startY=comp.y;
   let moved=false;
   function onMove(e2){
+    if(e2.pointerId!==evt.pointerId) return;
     const p2=clientToSvg(e2);
     const dx=p2.x-startPt.x, dy=p2.y-startPt.y;
     if(Math.abs(dx)>3||Math.abs(dy)>3) moved=true;
@@ -372,17 +404,21 @@ function onCompMouseDown(evt, comp){
     comp.y = Math.round((startY+dy)/40)*40;
     renderAll();
   }
-  function onUp(){
-    document.removeEventListener('mousemove',onMove);
-    document.removeEventListener('mouseup',onUp);
+  function onUp(e2){
+    if(e2.pointerId!==evt.pointerId) return;
+    document.removeEventListener('pointermove',onMove);
+    document.removeEventListener('pointerup',onUp);
+    document.removeEventListener('pointercancel',onUp);
+    try{ document.documentElement.releasePointerCapture(evt.pointerId); }catch(err){}
     if(!moved){ selectItem('component', comp.id); renderAll(); }
   }
-  document.addEventListener('mousemove',onMove);
-  document.addEventListener('mouseup',onUp);
+  document.addEventListener('pointermove',onMove);
+  document.addEventListener('pointerup',onUp);
+  document.addEventListener('pointercancel',onUp);
 }
 
 function findTerminalNear(x,y,excludeC,excludeT){
-  let best=null, bestD=14;
+  let best=null, bestD=18;
   components.forEach(c=>{
     [0,1].forEach(t=>{
       if(c.id===excludeC && t===excludeT) return;
@@ -394,20 +430,25 @@ function findTerminalNear(x,y,excludeC,excludeT){
   return best;
 }
 
-function onTermMouseDown(evt, comp, t){
+function onTermPointerDown(evt, comp, t){
   evt.stopPropagation();
   evt.preventDefault();
+  try{ document.documentElement.setPointerCapture(evt.pointerId); }catch(err){}
   const start = terminalPos(comp,t);
   pendingWire = {c:comp.id, t, curX:start.x, curY:start.y};
   renderAll();
   function onMove(e2){
+    if(e2.pointerId!==evt.pointerId) return;
     const p=clientToSvg(e2);
     pendingWire.curX=p.x; pendingWire.curY=p.y;
     renderAll();
   }
   function onUp(e2){
-    document.removeEventListener('mousemove',onMove);
-    document.removeEventListener('mouseup',onUp);
+    if(e2.pointerId!==evt.pointerId) return;
+    document.removeEventListener('pointermove',onMove);
+    document.removeEventListener('pointerup',onUp);
+    document.removeEventListener('pointercancel',onCancel);
+    try{ document.documentElement.releasePointerCapture(evt.pointerId); }catch(err){}
     const p=clientToSvg(e2);
     const target = findTerminalNear(p.x,p.y, comp.id, t);
     if(target){
@@ -416,30 +457,54 @@ function onTermMouseDown(evt, comp, t){
     pendingWire=null;
     renderAll();
   }
-  document.addEventListener('mousemove',onMove);
-  document.addEventListener('mouseup',onUp);
+  function onCancel(e2){
+    if(e2.pointerId!==evt.pointerId) return;
+    document.removeEventListener('pointermove',onMove);
+    document.removeEventListener('pointerup',onUp);
+    document.removeEventListener('pointercancel',onCancel);
+    try{ document.documentElement.releasePointerCapture(evt.pointerId); }catch(err){}
+    pendingWire=null;
+    renderAll();
+  }
+  document.addEventListener('pointermove',onMove);
+  document.addEventListener('pointerup',onUp);
+  document.addEventListener('pointercancel',onCancel);
 }
 
+let lastTapTime=0, lastTapId=null;
 function attachListeners(){
   document.querySelectorAll('.comp-hit').forEach(el=>{
     const id = el.closest('.comp-g').dataset.id;
-    el.addEventListener('mousedown', e=>onCompMouseDown(e, getComp(id)));
+    el.addEventListener('pointerdown', e=>onCompPointerDown(e, getComp(id)));
     el.addEventListener('dblclick', e=>{
       e.stopPropagation();
       const c=getComp(id);
       c.rot = (c.rot||0)===0 ? 90 : 0;
       renderAll();
     });
+    // Doppel-Tap-Erkennung für Touch (rotieren)
+    el.addEventListener('pointerup', e=>{
+      if(e.pointerType!=='touch') return;
+      const now=Date.now();
+      if(lastTapId===id && (now-lastTapTime)<350){
+        const c=getComp(id);
+        c.rot = (c.rot||0)===0 ? 90 : 0;
+        renderAll();
+        lastTapId=null;
+      } else {
+        lastTapTime=now; lastTapId=id;
+      }
+    });
   });
   document.querySelectorAll('.terminal').forEach(el=>{
-    el.addEventListener('mousedown', e=>{
+    el.addEventListener('pointerdown', e=>{
       const c=getComp(el.dataset.c);
       const t=parseInt(el.dataset.t);
-      onTermMouseDown(e,c,t);
+      onTermPointerDown(e,c,t);
     });
   });
   document.querySelectorAll('.wire-hit').forEach(el=>{
-    el.addEventListener('click', e=>{
+    el.addEventListener('pointerup', e=>{
       e.stopPropagation();
       selectItem('wire', el.closest('.wire-g').dataset.id);
       renderAll();
@@ -447,28 +512,59 @@ function attachListeners(){
   });
 }
 
-document.getElementById('bg').addEventListener('click', ()=>{ selectItem(null); renderAll(); });
+document.getElementById('bg').addEventListener('pointerup', ()=>{ selectItem(null); renderAll(); });
 
-// ---------- Drag & Drop aus Palette ----------
+// ---------- Bauteile aus Palette ziehen (Pointer Events -> Maus & Touch) ----------
 document.querySelectorAll('.palette-item').forEach(el=>{
-  el.addEventListener('dragstart', e=>{
-    e.dataTransfer.setData('text/plain', JSON.stringify({
-      type: el.dataset.type,
-      value: el.dataset.value ? parseFloat(el.dataset.value) : undefined
-    }));
+  el.addEventListener('pointerdown', evt=>{
+    evt.preventDefault();
+    const type = el.dataset.type;
+    const value = el.dataset.value ? parseFloat(el.dataset.value) : undefined;
+    startPaletteDrag(evt, type, value, el);
   });
 });
-svg.addEventListener('dragover', e=>e.preventDefault());
-svg.addEventListener('drop', e=>{
-  e.preventDefault();
-  const raw = e.dataTransfer.getData('text/plain');
-  if(!raw) return;
-  const data = JSON.parse(raw);
-  const pt = clientToSvg(e);
-  const gx = Math.round(pt.x/40)*40;
-  const gy = Math.round(pt.y/40)*40;
-  addComponent(data.type, gx, gy, data.value);
-});
+
+function startPaletteDrag(evt, type, value, sourceEl){
+  try{ document.documentElement.setPointerCapture(evt.pointerId); }catch(err){}
+  const ghost = document.createElement('div');
+  ghost.className='drag-ghost';
+  ghost.textContent = sourceEl.querySelector('span').textContent;
+  document.body.appendChild(ghost);
+  moveGhost(evt.clientX, evt.clientY);
+  function moveGhost(x,y){
+    ghost.style.left = x+'px';
+    ghost.style.top = y+'px';
+  }
+  function cleanup(){
+    document.removeEventListener('pointermove', onMove);
+    document.removeEventListener('pointerup', onUp);
+    document.removeEventListener('pointercancel', onCancel);
+    try{ document.documentElement.releasePointerCapture(evt.pointerId); }catch(err){}
+    ghost.remove();
+  }
+  function onMove(e2){
+    if(e2.pointerId!==evt.pointerId) return;
+    moveGhost(e2.clientX, e2.clientY);
+  }
+  function onUp(e2){
+    if(e2.pointerId!==evt.pointerId) return;
+    cleanup();
+    const rect = svg.getBoundingClientRect();
+    if(e2.clientX>=rect.left && e2.clientX<=rect.right && e2.clientY>=rect.top && e2.clientY<=rect.bottom){
+      const pt = clientToSvg(e2);
+      const gx = Math.round(pt.x/40)*40;
+      const gy = Math.round(pt.y/40)*40;
+      addComponent(type, gx, gy, value);
+    }
+  }
+  function onCancel(e2){
+    if(e2.pointerId!==evt.pointerId) return;
+    cleanup();
+  }
+  document.addEventListener('pointermove', onMove);
+  document.addEventListener('pointerup', onUp);
+  document.addEventListener('pointercancel', onCancel);
+}
 
 function addComponent(type,x,y,value){
   const id = 'c'+(idCounter++);
@@ -561,4 +657,3 @@ renderAll();
 </script>
 </body>
 </html>
-
