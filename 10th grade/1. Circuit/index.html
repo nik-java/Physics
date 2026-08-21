@@ -221,22 +221,46 @@ function clientToSvg(evt){
 // Zwischen den beiden Stub-Enden wird nur mit EINEM waagerechten und EINEM senkrechten
 // Segment verbunden (nie diagonal), wobei die Austrittsrichtung beibehalten wird.
 function wirePathD(p1, p2, dir1, dir2){
-  const STUB = 30;
-  const a1 = dir1 ? {x:p1.x+dir1.x*STUB, y:p1.y+dir1.y*STUB} : p1;
-  const a2 = dir2 ? {x:p2.x+dir2.x*STUB, y:p2.y+dir2.y*STUB} : p2;
+  const EPS = 0.5;
+  // Anschlüsse liegen exakt auf einer Höhe bzw. Spalte -> eine einzige gerade
+  // Leitung, wie in einem sauberen Schaltplan.
+  if(Math.abs(p1.y-p2.y) < EPS || Math.abs(p1.x-p2.x) < EPS){
+    return `M ${p1.x} ${p1.y} L ${p2.x} ${p2.y}`;
+  }
 
+  const STUB = 24;
   let horizontalFirst;
   if(dir1) horizontalFirst = Math.abs(dir1.x) >= Math.abs(dir1.y);
   else if(dir2) horizontalFirst = !(Math.abs(dir2.x) >= Math.abs(dir2.y));
   else horizontalFirst = true;
 
-  const corner = horizontalFirst ? {x:a2.x, y:a1.y} : {x:a1.x, y:a2.y};
-
+  let startPt = p1, endPt = p2;
   const pts = [p1];
-  if(dir1) pts.push(a1);
-  if(corner.x!==a1.x || corner.y!==a1.y) pts.push(corner);
-  if(dir2) pts.push(a2);
+
+  // Nur wenn die direkte Verbindung am Start entgegen der Anschlussrichtung
+  // verlaufen würde, wird vorher ein kurzes Stück herausgeführt.
+  if(dir1){
+    const need = horizontalFirst ? Math.sign(p2.x-p1.x) : Math.sign(p2.y-p1.y);
+    const comp = horizontalFirst ? dir1.x : dir1.y;
+    if(need !== 0 && Math.sign(comp) !== 0 && need !== Math.sign(comp)){
+      startPt = {x:p1.x+dir1.x*STUB, y:p1.y+dir1.y*STUB};
+      pts.push(startPt);
+    }
+  }
+  // Gleiche Prüfung am Ziel-Anschluss, für die jeweils andere Achse.
+  if(dir2){
+    const need2 = horizontalFirst ? Math.sign(p1.y-p2.y) : Math.sign(p1.x-p2.x);
+    const comp2 = horizontalFirst ? dir2.y : dir2.x;
+    if(need2 !== 0 && Math.sign(comp2) !== 0 && need2 !== Math.sign(comp2)){
+      endPt = {x:p2.x+dir2.x*STUB, y:p2.y+dir2.y*STUB};
+    }
+  }
+
+  const corner = horizontalFirst ? {x:endPt.x, y:startPt.y} : {x:startPt.x, y:endPt.y};
+  pts.push(corner);
+  if(endPt!==p2) pts.push(endPt);
   pts.push(p2);
+
   return pts.map((p,i)=> (i===0?'M':'L') + ' ' + p.x + ' ' + p.y).join(' ');
 }
 
@@ -637,18 +661,21 @@ document.addEventListener('keydown', e=>{
 
 // ---------- Beispiel-Schaltungen ----------
 function loadSeriesPreset(){
+  // Sauberer rechteckiger Schaltkreis: Batterie links (senkrecht), oben die beiden
+  // Widerstände in Reihe, rechts das Amperemeter (senkrecht), unten gerade zurück
+  // zur Batterie. Das Voltmeter hängt senkrecht direkt über R1.
   components = [
-    {id:'battery1', type:'battery', x:120, y:320, rot:0, value:9},
-    {id:'r100_1',   type:'resistor', x:280, y:160, rot:0, value:100},
-    {id:'r220_1',   type:'resistor', x:440, y:160, rot:0, value:220},
-    {id:'amm1',     type:'ammeter', x:600, y:160, rot:0},
+    {id:'battery1', type:'battery', x:120, y:240, rot:90, value:9},
+    {id:'r100_1',   type:'resistor', x:280, y:120, rot:0, value:100},
+    {id:'r220_1',   type:'resistor', x:440, y:120, rot:0, value:220},
+    {id:'amm1',     type:'ammeter', x:600, y:240, rot:90},
     {id:'volt1',    type:'voltmeter', x:280, y:40, rot:0}
   ];
   wires = [
-    {id:'w1', a:{c:'battery1',t:1}, b:{c:'r100_1',t:0}},
+    {id:'w1', a:{c:'battery1',t:0}, b:{c:'r100_1',t:0}},
     {id:'w2', a:{c:'r100_1',t:1},   b:{c:'r220_1',t:0}},
     {id:'w3', a:{c:'r220_1',t:1},   b:{c:'amm1',t:0}},
-    {id:'w4', a:{c:'amm1',t:1},     b:{c:'battery1',t:0}},
+    {id:'w4', a:{c:'amm1',t:1},     b:{c:'battery1',t:1}},
     {id:'w5', a:{c:'volt1',t:0},    b:{c:'r100_1',t:0}},
     {id:'w6', a:{c:'volt1',t:1},    b:{c:'r100_1',t:1}}
   ];
@@ -658,12 +685,16 @@ function loadSeriesPreset(){
 }
 
 function loadParallelPreset(){
+  // Sauberer Schaltkreis mit zwei durchgehend geraden Schienen (oben/unten):
+  // Batterie links (senkrecht) -> Amperemeter oben in Reihe -> obere Schiene ->
+  // drei parallele, senkrechte Zweige (R1, R2, Voltmeter) -> untere Schiene ->
+  // zurück zur Batterie.
   components = [
-    {id:'battery2', type:'battery', x:120, y:300, rot:0, value:9},
-    {id:'amm2',     type:'ammeter', x:300, y:180, rot:0},
-    {id:'r100_2',   type:'resistor', x:480, y:180, rot:90, value:100},
-    {id:'r220_2',   type:'resistor', x:620, y:180, rot:90, value:220},
-    {id:'volt2',    type:'voltmeter', x:760, y:180, rot:90}
+    {id:'battery2', type:'battery', x:120, y:160, rot:90, value:9},
+    {id:'amm2',     type:'ammeter', x:300, y:120, rot:0},
+    {id:'r100_2',   type:'resistor', x:480, y:160, rot:90, value:100},
+    {id:'r220_2',   type:'resistor', x:620, y:160, rot:90, value:220},
+    {id:'volt2',    type:'voltmeter', x:760, y:160, rot:90}
   ];
   wires = [
     {id:'w1', a:{c:'battery2',t:0}, b:{c:'amm2',t:0}},
