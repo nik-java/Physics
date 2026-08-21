@@ -1,1 +1,562 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Federexperiment – Wie stark dehnt sich eine Feder?</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap');
+
+  :root{
+    --blueprint: #0f2540;
+    --blueprint-deep: #0a1b30;
+    --grid-line: rgba(255,255,255,0.07);
+    --grid-line-strong: rgba(255,255,255,0.14);
+    --paper: #f5f0e4;
+    --paper-dim: #e9e2d0;
+    --ink: #eef2f7;
+    --ink-dim: #a9bbd1;
+    --brass: #c9903f;
+    --brass-dark: #96692a;
+    --steel: #8fb8d8;
+    --force: #e2643f;
+    --good: #6fae7f;
+    --radius: 10px;
+  }
+
+  *{ box-sizing:border-box; }
+
+  html,body{
+    margin:0; padding:0;
+    background:
+      linear-gradient(var(--grid-line) 1px, transparent 1px) 0 0/28px 28px,
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px) 0 0/28px 28px,
+      radial-gradient(ellipse at 20% -10%, #16345a 0%, var(--blueprint) 55%, var(--blueprint-deep) 100%);
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    min-height:100vh;
+  }
+
+  .app{ max-width:1180px; margin:0 auto; padding: 28px 20px 60px; }
+
+  header{
+    display:flex; flex-direction:column; gap:6px;
+    margin-bottom:22px;
+    border-bottom: 1px solid var(--grid-line-strong);
+    padding-bottom:18px;
+  }
+  header .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px; letter-spacing:.12em; text-transform:uppercase;
+    color: var(--steel);
+  }
+  header h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size: clamp(24px, 3.4vw, 36px);
+    margin:2px 0 4px;
+    font-weight:700;
+    letter-spacing: -0.01em;
+  }
+  header p{ margin:0; color:var(--ink-dim); font-size:14.5px; max-width:640px; line-height:1.5; }
+
+  .grid{
+    display:grid;
+    grid-template-columns: minmax(280px, 380px) 1fr;
+    gap:22px;
+    align-items:start;
+  }
+  @media (max-width: 860px){
+    .grid{ grid-template-columns: 1fr; }
+  }
+
+  .card{
+    background: var(--paper);
+    color:#20242b;
+    border-radius: var(--radius);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.35), 0 1px 0 rgba(255,255,255,0.5) inset;
+    padding: 16px 16px 18px;
+  }
+  .card + .card{ margin-top:18px; }
+
+  .card h2{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:15px; margin:0 0 10px;
+    text-transform:uppercase; letter-spacing:.06em;
+    color:#3a3f2e;
+    display:flex; align-items:center; gap:8px;
+  }
+  .card h2 .dot{ width:8px; height:8px; border-radius:50%; background:var(--brass); display:inline-block; }
+
+  /* ---------- Apparatus ---------- */
+  .apparatus-wrap{ position:relative; }
+  #apparatus{ width:100%; height:auto; display:block; }
+
+  .weight-tray{
+    margin-top:12px;
+    display:flex; gap:8px; flex-wrap:wrap;
+  }
+  .weight-tile{
+    flex:1 1 70px;
+    border: 1.5px solid var(--brass-dark);
+    background: linear-gradient(160deg, #e7bd77, var(--brass));
+    color:#3a2508;
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:600; font-size:13px;
+    border-radius:8px;
+    padding:9px 6px;
+    text-align:center;
+    cursor:pointer;
+    user-select:none;
+    transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
+    box-shadow: 0 2px 0 var(--brass-dark);
+  }
+  .weight-tile:hover{ filter:brightness(1.05); }
+  .weight-tile:active{ transform: translateY(2px); box-shadow:0 0 0 var(--brass-dark); }
+  .weight-tile.active{
+    background: linear-gradient(160deg, #6fae7f, #4d8a5c);
+    border-color:#33633f;
+    color:#eefaf1;
+    box-shadow: 0 2px 0 #33633f;
+  }
+  .weight-tile .g{ display:block; font-size:15px; }
+  .weight-tile .lbl{ display:block; font-size:9.5px; letter-spacing:.08em; text-transform:uppercase; opacity:.75; margin-top:2px;}
+
+  .hint{ font-size:12px; color:#5a5f4f; margin:10px 2px 0; line-height:1.5; }
+
+  /* ---------- Readout ---------- */
+  .readout-grid{
+    display:grid; grid-template-columns: repeat(2, 1fr); gap:10px;
+  }
+  .readout{
+    background: var(--paper-dim);
+    border:1px solid #d8cfb4;
+    border-radius:8px;
+    padding:8px 10px;
+  }
+  .readout .k{ font-size:10.5px; text-transform:uppercase; letter-spacing:.07em; color:#6b6350; }
+  .readout .v{ font-family:'IBM Plex Mono', monospace; font-size:18px; font-weight:600; color:#20242b; }
+  .readout .v small{ font-size:12px; font-weight:500; color:#6b6350; }
+
+  button.primary{
+    margin-top:12px; width:100%;
+    background: linear-gradient(160deg, #a9cbe6, var(--steel));
+    border:1.5px solid #5f8fb3;
+    color:#0d2740;
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700; font-size:14px;
+    padding:11px; border-radius:8px;
+    cursor:pointer;
+    box-shadow:0 2px 0 #5f8fb3;
+  }
+  button.primary:hover{ filter:brightness(1.04); }
+  button.primary:active{ transform:translateY(2px); box-shadow:none; }
+
+  button.ghost{
+    background:transparent; border:1px solid #b9b19a; color:#5a5f4f;
+    font-family:'IBM Plex Mono', monospace; font-size:12px;
+    padding:6px 10px; border-radius:6px; cursor:pointer;
+  }
+  button.ghost:hover{ background:#eee7d4; }
+
+  /* ---------- Brief / task text ---------- */
+  .brief p{ font-size:13.5px; line-height:1.6; margin:0 0 10px; color:#3a3f2e; }
+  .brief .label{ font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:.07em; color:#8a6a2e; display:block; margin-bottom:3px;}
+  .brief ol{ margin:0; padding-left:18px; font-size:13.5px; line-height:1.7; color:#3a3f2e; }
+  .brief .material{ font-size:13.5px; color:#3a3f2e; }
+  .brief-section{ margin-bottom:14px; }
+  .brief-section:last-child{ margin-bottom:0; }
+
+  /* ---------- Table ---------- */
+  table{ width:100%; border-collapse:collapse; font-family:'IBM Plex Mono', monospace; font-size:12.5px; }
+  thead th{
+    text-align:center; font-size:10.5px; text-transform:uppercase; letter-spacing:.04em;
+    color:#6b6350; border-bottom:2px solid #c8bf9f; padding:6px 4px; font-weight:600;
+  }
+  tbody td{ text-align:center; padding:7px 4px; border-bottom:1px solid #e2dac0; }
+  tbody tr:last-child td{ font-weight:600; color:#1f5c34; background:#eef5e9; }
+  tbody tr.empty td{ color:#9a927a; font-style:italic; font-family:'IBM Plex Sans', sans-serif; padding:14px; }
+  td.del{ cursor:pointer; color:#b3543c; font-weight:700; width:22px;}
+  td.del:hover{ text-decoration:underline; }
+  .table-actions{ display:flex; justify-content:flex-end; margin-top:8px; }
+
+  /* ---------- Graph ---------- */
+  .graph-card .toprow{ display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:8px;}
+  label.fitline{ display:flex; align-items:center; gap:6px; font-size:12px; color:#3a3f2e; font-family:'IBM Plex Mono', monospace; cursor:pointer;}
+  #graph{ width:100%; height:auto; display:block; }
+  .kbox{
+    margin-top:10px; background:var(--paper-dim); border:1px solid #d8cfb4; border-radius:8px;
+    padding:10px 12px; font-size:13px; color:#20242b; line-height:1.6;
+  }
+  .kbox b{ color:#1f5c34; }
+  .kbox code{ background:#e2dac0; padding:1px 5px; border-radius:4px; font-family:'IBM Plex Mono', monospace; }
+
+  footer{ text-align:center; color:var(--ink-dim); font-size:11.5px; margin-top:26px; font-family:'IBM Plex Mono', monospace; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <span class="eyebrow">Physik · Mechanik · Elastizität</span>
+    <h1>Wie stark dehnt sich eine Feder?</h1>
+    <p>Untersuche mit einer Schraubenfeder, wie sich die Verlängerung Δs verändert, wenn die wirkende Kraft F größer wird. Hänge Massestücke an den Haken, lies Lineal und Federlänge ab und trage deine Messwerte in die Tabelle ein.</p>
+  </header>
+
+  <div class="grid">
+
+    <!-- LEFT: Apparatus -->
+    <section class="lab">
+      <div class="card apparatus-wrap">
+        <h2><span class="dot"></span>Versuchsaufbau</h2>
+        <svg id="apparatus" viewBox="0 0 300 400" xmlns="http://www.w3.org/2000/svg"></svg>
+
+        <div class="weight-tray" id="weightTray"></div>
+        <p class="hint">Tippe auf ein Massestück, um es an den Federhaken zu hängen (nochmal tippen zum Abnehmen). Lies dann rechts am Lineal die Federlänge ab.</p>
+      </div>
+
+      <div class="card">
+        <h2><span class="dot"></span>Aktuelle Messwerte</h2>
+        <div class="readout-grid">
+          <div class="readout"><span class="k">Masse m</span><div class="v" id="rMass">0<small> kg</small></div></div>
+          <div class="readout"><span class="k">Kraft F</span><div class="v" id="rForce">0,00<small> N</small></div></div>
+          <div class="readout"><span class="k">Federlänge l</span><div class="v" id="rLen">10,0<small> cm</small></div></div>
+          <div class="readout"><span class="k">Verlängerung Δs</span><div class="v" id="rDelta">0,0<small> cm</small></div></div>
+        </div>
+        <button class="primary" id="recordBtn">＋ Messung in Tabelle übernehmen</button>
+      </div>
+    </section>
+
+    <!-- RIGHT: Notebook -->
+    <section class="notebook">
+
+      <div class="card brief">
+        <h2><span class="dot"></span>Versuchsprotokoll</h2>
+        <div class="brief-section">
+          <span class="label">Versuchsfrage</span>
+          <p>Wie hängt die Längenänderung Δs einer Feder von der wirkenden Kraft F ab?</p>
+        </div>
+        <div class="brief-section">
+          <span class="label">Material</span>
+          <p class="material">Stativ · Schraubenfeder · Massestücke · Lineal</p>
+        </div>
+        <div class="brief-section">
+          <span class="label">Durchführung</span>
+          <ol>
+            <li>Miss die unbelastete Länge der Feder.</li>
+            <li>Hänge nacheinander verschiedene Massestücke an.</li>
+            <li>Bestimme jeweils die wirkende Gewichtskraft und die Verlängerung Δs.</li>
+            <li>Trage deine Messwerte in die Tabelle ein.</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="dot"></span>Messtabelle</h2>
+        <table>
+          <thead>
+            <tr>
+              <th></th>
+              <th>Masse m<br>in kg</th>
+              <th>Kraft F<br>in N</th>
+              <th>Federlänge l<br>in cm</th>
+              <th>Verlängerung Δs<br>in cm</th>
+              <th>Δs/F<br>in cm/N</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <tr class="empty"><td colspan="6">Noch keine Messung – hänge ein Massestück an und übernimm den Wert.</td></tr>
+          </tbody>
+        </table>
+        <div class="table-actions"><button class="ghost" id="clearBtn">Tabelle leeren</button></div>
+      </div>
+
+      <div class="card graph-card">
+        <div class="toprow">
+          <h2 style="margin:0"><span class="dot"></span>Diagramm: Δs über F</h2>
+          <label class="fitline"><input type="checkbox" id="fitToggle"> Ursprungsgerade anzeigen</label>
+        </div>
+        <svg id="graph" viewBox="0 0 420 230" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div class="kbox" id="kbox">Sammle mindestens zwei Messwerte, um die Ausgleichsgerade und die Federkonstante D zu bestimmen.</div>
+      </div>
+
+    </section>
+  </div>
+
+  <footer>Simulation · Federkonstante D = 50&nbsp;N/m (unbekannt für die Auswertung) · g = 9,81&nbsp;m/s² · unbelastete Länge l₀ = 10,0&nbsp;cm</footer>
+</div>
+
+<script>
+(function(){
+  const G = 9.81;
+  const D = 50;        // N/m, "reale" Federkonstante der Simulationsfeder
+  const L0_CM = 10.0;  // unbelastete Länge
+  const PXPERCM = 9;
+
+  const WEIGHTS = [
+    {id:'w50a',  g:50},
+    {id:'w50b',  g:50},
+    {id:'w100',  g:100},
+    {id:'w200',  g:200},
+  ];
+  const attached = new Set();
+  let rows = [];
+  let rowId = 1;
+
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const apparatus = document.getElementById('apparatus');
+
+  // ---------- build static apparatus (stand + ruler) ----------
+  const ANCHOR_X = 150, ANCHOR_Y = 34;
+  const RULER_X = 205;
+
+  function el(tag, attrs){
+    const e = document.createElementNS(svgNS, tag);
+    for(const k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+
+  function buildStatic(){
+    // stand base
+    apparatus.appendChild(el('rect', {x:20, y:388, width:110, height:8, rx:2, fill:'#c7d3de'}));
+    apparatus.appendChild(el('rect', {x:40, y:24, width:10, height:372, rx:2, fill:'#c7d3de'}));
+    apparatus.appendChild(el('rect', {x:40, y:24, width:118, height:10, rx:2, fill:'#c7d3de'}));
+    apparatus.appendChild(el('circle', {cx:ANCHOR_X, cy:ANCHOR_Y, r:5, fill:'#7d8b98'}));
+
+    // ruler
+    const rulerTopCm = 0, rulerBottomCm = 26;
+    apparatus.appendChild(el('rect', {x:RULER_X-3, y:ANCHOR_Y-4, width:26, height:(rulerBottomCm-rulerTopCm)*PXPERCM+8, rx:3, fill:'#fbf6e8', stroke:'#c9bd93', 'stroke-width':1}));
+    for(let cm=0; cm<=rulerBottomCm; cm++){
+      const y = ANCHOR_Y + cm*PXPERCM;
+      const major = cm % 5 === 0;
+      apparatus.appendChild(el('line', {x1:RULER_X, y1:y, x2: RULER_X + (major?14:8), y2:y, stroke:'#8a6a2e', 'stroke-width': major?1.4:0.8}));
+      if(major){
+        const t = el('text', {x:RULER_X+17, y:y+3, 'font-size':8, fill:'#5a4520', 'font-family':'IBM Plex Mono, monospace'});
+        t.textContent = cm;
+        apparatus.appendChild(t);
+      }
+    }
+    const lbl = el('text', {x:RULER_X+8, y:ANCHOR_Y-10, 'font-size':8, fill:'#8fb8d8', 'font-family':'IBM Plex Mono, monospace'});
+    lbl.textContent = 'cm';
+    apparatus.appendChild(lbl);
+  }
+
+  // dynamic elements
+  const springPathEl = el('path', {fill:'none', stroke:'#8fb8d8', 'stroke-width':2.4, 'stroke-linejoin':'round'});
+  const measureLine = el('line', {stroke:'#e2643f', 'stroke-width':1.2, 'stroke-dasharray':'4 3'});
+  const measureLabel = el('text', {'font-size':10.5, fill:'#e2643f', 'font-family':'IBM Plex Mono, monospace', 'font-weight':'600'});
+  const weightsGroup = el('g', {});
+
+  buildStatic();
+  apparatus.appendChild(measureLine);
+  apparatus.appendChild(measureLabel);
+  apparatus.appendChild(springPathEl);
+  apparatus.appendChild(weightsGroup);
+
+  function springPath(x, yTop, yBottom, coils, width){
+    const straight = 10;
+    const coilHeight = Math.max(yBottom - yTop - straight*2, 10);
+    const steps = coils*2;
+    const step = coilHeight/steps;
+    let y = yTop + straight;
+    let d = `M ${x} ${yTop} L ${x} ${y}`;
+    for(let i=1;i<=steps;i++){
+      y += step;
+      const dx = (i%2===1) ? width : -width;
+      d += ` L ${x+dx} ${y.toFixed(1)}`;
+    }
+    d += ` L ${x} ${y.toFixed(1)} L ${x} ${yBottom.toFixed(1)}`;
+    return d;
+  }
+
+  function totalGrams(){
+    return WEIGHTS.filter(w=>attached.has(w.id)).reduce((s,w)=>s+w.g,0);
+  }
+
+  function computeCurrent(){
+    const mKg = totalGrams()/1000;
+    const F = mKg*G;
+    const deltaCm = Math.round((F/D*100)*10)/10; // ruler precision 0.1cm
+    const lCm = Math.round((L0_CM + deltaCm)*10)/10;
+    return {mKg, F, deltaCm, lCm};
+  }
+
+  function fmt(n, dec){ return n.toFixed(dec).replace('.', ','); }
+
+  function updateApparatus(){
+    const {deltaCm, lCm} = computeCurrent();
+    const bottomY = ANCHOR_Y + lCm*PXPERCM;
+    springPathEl.setAttribute('d', springPath(ANCHOR_X, ANCHOR_Y, bottomY, 9, 16));
+
+    // measurement guide line to ruler
+    measureLine.setAttribute('x1', ANCHOR_X);
+    measureLine.setAttribute('y1', bottomY);
+    measureLine.setAttribute('x2', RULER_X+2);
+    measureLine.setAttribute('y2', bottomY);
+    measureLabel.setAttribute('x', ANCHOR_X-46);
+    measureLabel.setAttribute('y', bottomY - 5);
+    measureLabel.textContent = 'l = ' + fmt(lCm,1) + ' cm';
+
+    // weights stack
+    while(weightsGroup.firstChild) weightsGroup.removeChild(weightsGroup.firstChild);
+    let stackY = bottomY;
+    apparatus_hook: {
+      weightsGroup.appendChild(el('rect', {x:ANCHOR_X-4, y:bottomY-2, width:8, height:6, fill:'#5a6b7a'}));
+    }
+    const activeWeights = WEIGHTS.filter(w=>attached.has(w.id));
+    activeWeights.forEach((w, i)=>{
+      const wWidth = 30 + w.g/8;
+      const h = 16;
+      const shade = 70 - i*6;
+      const rect = el('rect', {
+        x: ANCHOR_X - wWidth/2, y: stackY+3, width: wWidth, height: h, rx:3,
+        fill: `hsl(35 55% ${shade}%)`, stroke:'#7a5420', 'stroke-width':1
+      });
+      weightsGroup.appendChild(rect);
+      const t = el('text', {x:ANCHOR_X, y: stackY+3+h/2+4, 'text-anchor':'middle', 'font-size':9.5, 'font-family':'IBM Plex Mono, monospace', fill:'#3a2508', 'font-weight':'600'});
+      t.textContent = w.g + ' g';
+      weightsGroup.appendChild(t);
+      stackY += h + 2;
+    });
+
+    // readouts
+    const {mKg, F} = computeCurrent();
+    document.getElementById('rMass').innerHTML = fmt(mKg,3) + '<small> kg</small>';
+    document.getElementById('rForce').innerHTML = fmt(F,2) + '<small> N</small>';
+    document.getElementById('rLen').innerHTML = fmt(lCm,1) + '<small> cm</small>';
+    document.getElementById('rDelta').innerHTML = fmt(deltaCm,1) + '<small> cm</small>';
+  }
+
+  // ---------- weight tray ----------
+  const tray = document.getElementById('weightTray');
+  WEIGHTS.forEach(w=>{
+    const tile = document.createElement('div');
+    tile.className = 'weight-tile';
+    tile.id = 'tile-'+w.id;
+    tile.innerHTML = `<span class="g">${w.g} g</span><span class="lbl">${attached.has(w.id)?'am Haken':'antippen'}</span>`;
+    tile.addEventListener('click', ()=>{
+      if(attached.has(w.id)) attached.delete(w.id); else attached.add(w.id);
+      tile.classList.toggle('active');
+      tile.querySelector('.lbl').textContent = attached.has(w.id) ? 'am Haken' : 'antippen';
+      updateApparatus();
+      updateGraph();
+    });
+    tray.appendChild(tile);
+  });
+
+  // ---------- table ----------
+  const tbody = document.getElementById('tableBody');
+  function renderTable(){
+    tbody.innerHTML = '';
+    if(rows.length === 0){
+      tbody.innerHTML = '<tr class="empty"><td colspan="6">Noch keine Messung – hänge ein Massestück an und übernimm den Wert.</td></tr>';
+      return;
+    }
+    rows.forEach(r=>{
+      const tr = document.createElement('tr');
+      const ratio = r.F > 0 ? (r.deltaCm/r.F) : NaN;
+      tr.innerHTML = `
+        <td class="del" title="Zeile löschen">✕</td>
+        <td>${fmt(r.mKg,3)}</td>
+        <td>${fmt(r.F,2)}</td>
+        <td>${fmt(r.lCm,1)}</td>
+        <td>${fmt(r.deltaCm,1)}</td>
+        <td>${isNaN(ratio) ? '—' : fmt(ratio,2)}</td>
+      `;
+      tr.querySelector('.del').addEventListener('click', ()=>{
+        rows = rows.filter(x=>x.id !== r.id);
+        renderTable(); updateGraph();
+      });
+      tbody.appendChild(tr);
+    });
+  }
+
+  document.getElementById('recordBtn').addEventListener('click', ()=>{
+    const c = computeCurrent();
+    rows.push({id: rowId++, ...c});
+    renderTable();
+    updateGraph();
+  });
+  document.getElementById('clearBtn').addEventListener('click', ()=>{
+    rows = [];
+    renderTable();
+    updateGraph();
+  });
+
+  // ---------- graph ----------
+  const graph = document.getElementById('graph');
+  const fitToggle = document.getElementById('fitToggle');
+  fitToggle.addEventListener('change', updateGraph);
+
+  const PAD = {l:42, r:16, t:14, b:32};
+  const GW = 420, GH = 230;
+  const plotW = GW - PAD.l - PAD.r;
+  const plotH = GH - PAD.t - PAD.b;
+
+  function updateGraph(){
+    while(graph.firstChild) graph.removeChild(graph.firstChild);
+
+    const maxF = Math.max(1, ...rows.map(r=>r.F), 2.5);
+    const maxD = Math.max(2, ...rows.map(r=>r.deltaCm), 6);
+    const xMax = Math.ceil(maxF*1.15*10)/10;
+    const yMax = Math.ceil(maxD*1.15);
+
+    const x = f => PAD.l + (f/xMax)*plotW;
+    const y = d => PAD.t + plotH - (d/yMax)*plotH;
+
+    // grid + axes
+    const nX = 5, nY = 5;
+    for(let i=0;i<=nX;i++){
+      const fx = xMax*i/nX;
+      const gx = x(fx);
+      graph.appendChild(el('line',{x1:gx,y1:PAD.t,x2:gx,y2:PAD.t+plotH, stroke:'#e2dac0', 'stroke-width':1}));
+      const t = el('text',{x:gx, y:PAD.t+plotH+14, 'text-anchor':'middle', 'font-size':9, fill:'#6b6350', 'font-family':'IBM Plex Mono, monospace'});
+      t.textContent = fx.toFixed(1);
+      graph.appendChild(t);
+    }
+    for(let i=0;i<=nY;i++){
+      const dy = yMax*i/nY;
+      const gy = y(dy);
+      graph.appendChild(el('line',{x1:PAD.l,y1:gy,x2:PAD.l+plotW,y2:gy, stroke:'#e2dac0', 'stroke-width':1}));
+      const t = el('text',{x:PAD.l-8, y:gy+3, 'text-anchor':'end', 'font-size':9, fill:'#6b6350', 'font-family':'IBM Plex Mono, monospace'});
+      t.textContent = dy.toFixed(0);
+      graph.appendChild(t);
+    }
+    graph.appendChild(el('line',{x1:PAD.l,y1:PAD.t,x2:PAD.l,y2:PAD.t+plotH, stroke:'#8a8365','stroke-width':1.3}));
+    graph.appendChild(el('line',{x1:PAD.l,y1:PAD.t+plotH,x2:PAD.l+plotW,y2:PAD.t+plotH, stroke:'#8a8365','stroke-width':1.3}));
+
+    const xlab = el('text',{x:PAD.l+plotW/2, y:GH-4, 'text-anchor':'middle', 'font-size':10.5, fill:'#3a3f2e', 'font-family':'IBM Plex Mono, monospace'});
+    xlab.textContent = 'F in N';
+    graph.appendChild(xlab);
+    const ylab = el('text',{x:12, y:PAD.t+plotH/2, 'text-anchor':'middle', 'font-size':10.5, fill:'#3a3f2e', 'font-family':'IBM Plex Mono, monospace', transform:`rotate(-90 12 ${PAD.t+plotH/2})`});
+    ylab.textContent = 'Δs in cm';
+    graph.appendChild(ylab);
+
+    // points
+    rows.forEach(r=>{
+      graph.appendChild(el('circle',{cx:x(r.F), cy:y(r.deltaCm), r:4.5, fill:'#e2643f', stroke:'#8a3a22', 'stroke-width':1}));
+    });
+
+    // fit line through origin (least squares)
+    const kbox = document.getElementById('kbox');
+    const validRows = rows.filter(r=>r.F>0);
+    if(fitToggle.checked && validRows.length >= 2){
+      const sumFD = validRows.reduce((s,r)=>s+r.F*r.deltaCm,0);
+      const sumFF = validRows.reduce((s,r)=>s+r.F*r.F,0);
+      const slope = sumFD/sumFF; // cm/N
+      const Dfit = 100/slope;    // N/m  (slope is cm/N -> convert to m/N then invert)
+      graph.appendChild(el('line',{x1:x(0), y1:y(0), x2:x(xMax), y2:y(Math.min(slope*xMax,yMax)), stroke:'#1f5c34','stroke-width':1.6,'stroke-dasharray':'6 3'}));
+      kbox.innerHTML = `Die Messpunkte liegen näherungsweise auf einer <b>Ursprungsgeraden</b> — Δs ist proportional zu F. Steigung ≈ <code>${slope.toFixed(2)} cm/N</code>, daraus folgt die Federkonstante <b>D ≈ ${Dfit.toFixed(1)} N/m</b> aus <code>F = D · Δs</code>.`;
+    } else if(validRows.length >= 2){
+      kbox.innerHTML = `Vergleiche die Werte in der letzten Spalte <b>Δs/F</b> — bleiben sie ungefähr konstant, ist Δs proportional zu F. Aktiviere die Ursprungsgerade, um die Federkonstante D zu bestimmen.`;
+    } else {
+      kbox.innerHTML = `Sammle mindestens zwei Messwerte, um die Ausgleichsgerade und die Federkonstante D zu bestimmen.`;
+    }
+  }
+
+  updateApparatus();
+  updateGraph();
+})();
+</script>
+</body>
+</html>
 
