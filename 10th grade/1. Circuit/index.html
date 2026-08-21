@@ -199,16 +199,45 @@ function terminalPos(comp, idx){
   return {x: comp.x+rx, y: comp.y+ry};
 }
 
+// Richtung, in die ein Anschluss "herausschaut" (weg vom Bauteil-Mittelpunkt)
+function terminalDir(comp, idx){
+  const local = idx===0 ? {x:-1,y:0} : {x:1,y:0};
+  const rad = (comp.rot||0) * Math.PI/180;
+  return {
+    x: local.x*Math.cos(rad) - local.y*Math.sin(rad),
+    y: local.x*Math.sin(rad) + local.y*Math.cos(rad)
+  };
+}
+
 function clientToSvg(evt){
   const pt = svg.createSVGPoint();
   pt.x = evt.clientX; pt.y = evt.clientY;
   return pt.matrixTransform(svg.getScreenCTM().inverse());
 }
 
-// Rechtwinklige Kabelführung (nur waagerechte/senkrechte Segmente -> "Rechtecke")
-function wirePathD(p1, p2){
-  const midX = (p1.x + p2.x) / 2;
-  return `M ${p1.x} ${p1.y} L ${midX} ${p1.y} L ${midX} ${p2.y} L ${p2.x} ${p2.y}`;
+// Rechtwinklige Kabelführung: führt zunächst gerade vom Anschluss weg (Stub) in die
+// Richtung, in die das Bauteil an dieser Seite herausschaut - rechts gebaute Bauteile
+// bekommen also ein Kabel, das nach rechts rausgeht, links gebaute eines nach links.
+// Zwischen den beiden Stub-Enden wird nur mit EINEM waagerechten und EINEM senkrechten
+// Segment verbunden (nie diagonal), wobei die Austrittsrichtung beibehalten wird.
+function wirePathD(p1, p2, dir1, dir2){
+  const STUB = 30;
+  const a1 = dir1 ? {x:p1.x+dir1.x*STUB, y:p1.y+dir1.y*STUB} : p1;
+  const a2 = dir2 ? {x:p2.x+dir2.x*STUB, y:p2.y+dir2.y*STUB} : p2;
+
+  let horizontalFirst;
+  if(dir1) horizontalFirst = Math.abs(dir1.x) >= Math.abs(dir1.y);
+  else if(dir2) horizontalFirst = !(Math.abs(dir2.x) >= Math.abs(dir2.y));
+  else horizontalFirst = true;
+
+  const corner = horizontalFirst ? {x:a2.x, y:a1.y} : {x:a1.x, y:a2.y};
+
+  const pts = [p1];
+  if(dir1) pts.push(a1);
+  if(corner.x!==a1.x || corner.y!==a1.y) pts.push(corner);
+  if(dir2) pts.push(a2);
+  pts.push(p2);
+  return pts.map((p,i)=> (i===0?'M':'L') + ' ' + p.x + ' ' + p.y).join(' ');
 }
 
 // ---------- Schaltungs-Löser (Modified Nodal Analysis) ----------
@@ -314,8 +343,8 @@ function buildComponentSvg(c){
   const sel = selected && selected.type==='component' && selected.id===c.id;
   const selRect = sel ? `<rect x="-46" y="-26" width="92" height="52" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="5,3" rx="8"/>` : '';
   return `<g class="comp-g" data-id="${c.id}" transform="translate(${c.x},${c.y}) rotate(${c.rot||0})">
+      <rect class="comp-hit" x="-46" y="-26" width="92" height="52" fill="#fff" rx="6"/>
       ${selRect}
-      <rect class="comp-hit" x="-46" y="-26" width="92" height="52" fill="transparent"/>
       ${bodyMarkup(c)}
       <circle class="terminal" data-c="${c.id}" data-t="0" cx="-40" cy="0" r="9" fill="#0ea5e9" stroke="#fff" stroke-width="2"/>
       <circle class="terminal" data-c="${c.id}" data-t="1" cx="40" cy="0" r="9" fill="#0ea5e9" stroke="#fff" stroke-width="2"/>
@@ -331,7 +360,7 @@ function renderAll(){
     const ca=getComp(w.a.c), cb=getComp(w.b.c);
     if(!ca||!cb) return;
     const p1=terminalPos(ca,w.a.t), p2=terminalPos(cb,w.b.t);
-    const d = wirePathD(p1,p2);
+    const d = wirePathD(p1, p2, terminalDir(ca,w.a.t), terminalDir(cb,w.b.t));
     const sel = selected && selected.type==='wire' && selected.id===w.id;
     wiresHtml += `<g class="wire-g" data-id="${w.id}">
         <path d="${d}" fill="none" stroke="transparent" stroke-width="16" class="wire-hit"/>
@@ -346,7 +375,7 @@ function renderAll(){
     const startComp = getComp(pendingWire.c);
     if(startComp){
       const start = terminalPos(startComp, pendingWire.t);
-      const d = wirePathD(start, {x:pendingWire.curX, y:pendingWire.curY});
+      const d = wirePathD(start, {x:pendingWire.curX, y:pendingWire.curY}, terminalDir(startComp, pendingWire.t), null);
       tempHtml = `<path d="${d}" fill="none" stroke="#f59e0b" stroke-width="3" stroke-dasharray="6,4" stroke-linecap="round" stroke-linejoin="round"/>`;
     }
   }
@@ -479,7 +508,7 @@ function attachListeners(){
     el.addEventListener('dblclick', e=>{
       e.stopPropagation();
       const c=getComp(id);
-      c.rot = (c.rot||0)===0 ? 90 : 0;
+      c.rot = ((c.rot||0)+90) % 360;
       renderAll();
     });
     // Doppel-Tap-Erkennung für Touch (rotieren)
@@ -488,7 +517,7 @@ function attachListeners(){
       const now=Date.now();
       if(lastTapId===id && (now-lastTapTime)<350){
         const c=getComp(id);
-        c.rot = (c.rot||0)===0 ? 90 : 0;
+        c.rot = ((c.rot||0)+90) % 360;
         renderAll();
         lastTapId=null;
       } else {
@@ -590,7 +619,7 @@ document.getElementById('btnDelete').onclick = deleteSelected;
 document.getElementById('btnRotate').onclick = ()=>{
   if(selected && selected.type==='component'){
     const c=getComp(selected.id);
-    c.rot = (c.rot||0)===0 ? 90 : 0;
+    c.rot = ((c.rot||0)+90) % 360;
     renderAll();
   }
 };
