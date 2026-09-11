@@ -1,1 +1,604 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elektromagnet-Labor</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
+
+:root{
+  --bg: #E7EDF3;
+  --grid: #d3dde7;
+  --card: #FFFFFF;
+  --ink: #16233B;
+  --ink-soft: #4C5C77;
+  --copper: #B5651D;
+  --copper-dark: #8A4A14;
+  --field: #2F6FED;
+  --field-soft: #BFD3FB;
+  --good: #1F8A63;
+  --good-bg: #E4F5EC;
+  --warn: #C4501F;
+  --border: #C3D0DE;
+  --disabled: #B7C2D0;
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:
+    linear-gradient(var(--grid) 1px, transparent 1px) 0 0/28px 28px,
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0/28px 28px,
+    var(--bg);
+  color:var(--ink);
+  font-family:'IBM Plex Sans', sans-serif;
+  padding:28px 16px 60px;
+  line-height:1.5;
+}
+
+.wrap{max-width:1080px;margin:0 auto;}
+
+header.page{margin-bottom:22px;}
+header.page h1{
+  font-size:clamp(1.5rem, 3vw, 2.1rem);
+  font-weight:700;
+  margin:0 0 6px;
+  letter-spacing:-0.01em;
+}
+header.page p{
+  margin:0;
+  color:var(--ink-soft);
+  max-width:66ch;
+  font-size:0.98rem;
+}
+
+.frame{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:10px;
+  box-shadow: 0 1px 0 rgba(22,35,59,0.04);
+}
+
+/* ===== Layout ===== */
+.lab{
+  display:grid;
+  grid-template-columns: 1.35fr 1fr;
+  gap:18px;
+  margin-bottom:22px;
+}
+@media (max-width: 860px){
+  .lab{grid-template-columns:1fr;}
+}
+
+/* ===== Simulation panel ===== */
+.sim-panel{padding:18px 18px 16px;}
+.sim-panel h2, .ctrl-panel h2{
+  font-size:0.78rem;
+  text-transform:uppercase;
+  letter-spacing:0.06em;
+  color:var(--ink-soft);
+  font-weight:600;
+  margin:0 0 12px;
+}
+.sim-stage{
+  width:100%;
+  aspect-ratio: 4/3;
+  border-radius:8px;
+  background:
+    radial-gradient(circle at 30% 20%, #F3F7FB 0%, #E9EFF6 70%);
+  border:1px solid var(--border);
+  overflow:hidden;
+}
+.readout{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  margin-top:14px;
+  gap:14px;
+  flex-wrap:wrap;
+}
+.readout .field-label{
+  font-size:0.78rem;
+  color:var(--ink-soft);
+  margin-bottom:4px;
+}
+.field-value{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:1.9rem;
+  font-weight:600;
+  color:var(--field);
+}
+.field-value span{font-size:1rem; color:var(--ink-soft); font-weight:500;}
+.gauge{
+  flex:1;
+  min-width:160px;
+}
+.gauge-track{
+  height:10px;
+  border-radius:6px;
+  background:#DCE5F0;
+  overflow:hidden;
+  border:1px solid var(--border);
+}
+.gauge-fill{
+  height:100%;
+  width:0%;
+  background:linear-gradient(90deg, var(--field-soft), var(--field));
+  transition:width 0.35s ease;
+}
+.gauge-scale{
+  display:flex; justify-content:space-between;
+  font-family:'IBM Plex Mono', monospace;
+  font-size:0.68rem;
+  color:var(--ink-soft);
+  margin-top:4px;
+}
+
+/* ===== Controls panel ===== */
+.ctrl-panel{padding:18px 18px 18px;}
+.ctrl{margin-bottom:16px;}
+.ctrl-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+  margin-bottom:6px;
+}
+.ctrl-row label{font-weight:600; font-size:0.92rem;}
+.ctrl-row .val{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:0.88rem;
+  color:var(--copper-dark);
+  font-weight:600;
+}
+input[type=range]{
+  width:100%;
+  accent-color: var(--copper);
+  height:4px;
+  cursor:pointer;
+}
+input[type=range]:disabled{accent-color:var(--disabled); cursor:not-allowed;}
+
+.switch-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:10px 12px;
+  background:#F3F6FA;
+  border:1px solid var(--border);
+  border-radius:7px;
+}
+.switch-row label{font-weight:600; font-size:0.92rem;}
+.switch{
+  position:relative; width:44px; height:24px;
+  flex-shrink:0;
+}
+.switch input{position:absolute; opacity:0; width:100%; height:100%; margin:0; cursor:pointer; z-index:2;}
+.switch .track{
+  position:absolute; inset:0; background:var(--disabled); border-radius:14px; transition:background 0.2s;
+}
+.switch input:checked + .track{background:var(--copper);}
+.switch .thumb{
+  position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:50%;
+  background:white; transition:left 0.2s; box-shadow:0 1px 2px rgba(0,0,0,0.3);
+}
+.switch input:checked ~ .thumb{left:23px;}
+.switch input:disabled ~ .track{opacity:0.5;}
+
+.runbtns{
+  display:flex; gap:8px; flex-wrap:wrap;
+  margin-top:18px;
+  padding-top:16px;
+  border-top:1px dashed var(--border);
+}
+button.chip{
+  font-family:'IBM Plex Sans', sans-serif;
+  font-size:0.82rem;
+  font-weight:600;
+  padding:8px 13px;
+  border-radius:7px;
+  border:1px solid var(--border);
+  background:#F3F6FA;
+  color:var(--ink);
+  cursor:pointer;
+  transition: all 0.15s;
+}
+button.chip:hover{border-color:var(--copper); color:var(--copper-dark);}
+button.chip.active{
+  background:var(--copper); border-color:var(--copper); color:white;
+}
+button.chip.reset{margin-left:auto; background:none; border-color:transparent; color:var(--ink-soft); text-decoration:underline;}
+.lock-note{
+  font-size:0.78rem;
+  color:var(--copper-dark);
+  margin-top:10px;
+  min-height:1.2em;
+}
+
+/* ===== Table ===== */
+.protokoll{padding:20px 18px 22px;}
+.protokoll h2{
+  font-size:1.1rem; font-weight:700; margin:0 0 4px;
+}
+.protokoll > p{margin:0 0 16px; color:var(--ink-soft); font-size:0.92rem;}
+
+.versuch{
+  border:1px solid var(--border);
+  border-radius:9px;
+  margin-bottom:14px;
+  overflow:hidden;
+}
+.versuch-head{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:12px 14px;
+  background:#F3F6FA;
+  border-bottom:1px solid var(--border);
+  flex-wrap:wrap;
+}
+.versuch-tag{
+  font-family:'IBM Plex Mono', monospace;
+  font-weight:600;
+  font-size:0.85rem;
+  background:var(--copper);
+  color:white;
+  width:26px; height:26px;
+  display:flex; align-items:center; justify-content:center;
+  border-radius:6px;
+  flex-shrink:0;
+}
+.versuch-title{font-weight:600; font-size:0.95rem; flex:1; min-width:180px;}
+.versuch-body{padding:14px; display:grid; gap:12px;}
+@media(min-width:700px){
+  .versuch-body{grid-template-columns:1fr 1fr 1fr;}
+}
+.field-block label{
+  display:block; font-size:0.76rem; color:var(--ink-soft); font-weight:600;
+  text-transform:uppercase; letter-spacing:0.04em; margin-bottom:5px;
+}
+.field-block textarea{
+  width:100%; min-height:64px; resize:vertical;
+  font-family:'IBM Plex Sans', sans-serif; font-size:0.88rem;
+  padding:8px 10px; border-radius:6px; border:1px solid var(--border);
+  background:#FBFCFE; color:var(--ink);
+}
+.field-block textarea:focus{outline:2px solid var(--field-soft); border-color:var(--field);}
+
+.versuch-foot{
+  padding:0 14px 14px;
+  display:flex; justify-content:flex-end;
+}
+.solve-btn{
+  font-family:'IBM Plex Sans', sans-serif;
+  font-size:0.8rem; font-weight:600;
+  color:var(--field); background:none; border:none; cursor:pointer;
+  padding:4px 2px;
+}
+.solution{
+  display:none;
+  margin:0 14px 14px;
+  padding:12px 14px;
+  background:var(--good-bg);
+  border:1px solid #BEE3CF;
+  border-radius:7px;
+  font-size:0.87rem;
+}
+.solution.show{display:block;}
+.solution strong{color:var(--good); display:block; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:3px;}
+.solution p{margin:0 0 8px;}
+.solution p:last-child{margin-bottom:0;}
+
+footer.note{
+  text-align:center; color:var(--ink-soft); font-size:0.8rem; margin-top:8px;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="page">
+    <h1>Elektromagnet-Labor</h1>
+    <p>Wovon hängt die Stärke des Spulenmagnetfeldes ab? Verändert Stromstärke, Windungszahl und Eisenkern einzeln und beobachtet, wie viele Büroklammern die Spule anzieht.</p>
+  </header>
+
+  <div class="lab">
+    <div class="frame sim-panel">
+      <h2>Simulation</h2>
+      <div class="sim-stage">
+        <svg id="stage" viewBox="0 0 400 300" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"></svg>
+      </div>
+      <div class="readout">
+        <div>
+          <div class="field-label">Angezogene Büroklammern</div>
+          <div class="field-value" id="clipCount">0<span> / 8</span></div>
+        </div>
+        <div class="gauge">
+          <div class="field-label">Relative Feldstärke B</div>
+          <div class="gauge-track"><div class="gauge-fill" id="gaugeFill"></div></div>
+          <div class="gauge-scale"><span>0</span><span>50</span><span>100</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="frame ctrl-panel">
+      <h2>Einstellungen</h2>
+
+      <div class="ctrl">
+        <div class="ctrl-row">
+          <label for="current">Stromstärke I</label>
+          <span class="val" id="currentVal">2.5 A</span>
+        </div>
+        <input type="range" id="current" min="0" max="5" step="0.5" value="2.5">
+      </div>
+
+      <div class="ctrl">
+        <div class="ctrl-row">
+          <label for="turns">Windungszahl n</label>
+          <span class="val" id="turnsVal">50</span>
+        </div>
+        <input type="range" id="turns" min="10" max="100" step="5" value="50">
+      </div>
+
+      <div class="switch-row">
+        <label for="core">Eisenkern einsetzen</label>
+        <div class="switch">
+          <input type="checkbox" id="core">
+          <div class="track"></div>
+          <div class="thumb"></div>
+        </div>
+      </div>
+
+      <div class="runbtns">
+        <button class="chip" data-run="A">Versuch A</button>
+        <button class="chip" data-run="B">Versuch B</button>
+        <button class="chip" data-run="C">Versuch C</button>
+        <button class="chip reset" data-run="frei">Alle freischalten</button>
+      </div>
+      <div class="lock-note" id="lockNote"></div>
+    </div>
+  </div>
+
+  <div class="frame protokoll">
+    <h2>Versuchsprotokoll</h2>
+    <p>Startet oben den passenden Versuch (nur eine Größe verändert sich, die anderen sind gesperrt), experimentiert mit dem Regler und tragt eure Beobachtung ein. Mit „Musterlösung“ könnt ihr eure Antwort vergleichen.</p>
+
+    <div class="versuch" id="row-A">
+      <div class="versuch-head">
+        <div class="versuch-tag">A</div>
+        <div class="versuch-title">Stromstärke I erhöhen</div>
+      </div>
+      <div class="versuch-body">
+        <div class="field-block">
+          <label>Beobachtung</label>
+          <textarea placeholder="Was passiert mit den Büroklammern?"></textarea>
+        </div>
+        <div class="field-block">
+          <label>Ergebnis</label>
+          <textarea placeholder="Wie verändert sich die Feldstärke?"></textarea>
+        </div>
+        <div class="field-block">
+          <label>Begründung</label>
+          <textarea placeholder="Warum ist das so?"></textarea>
+        </div>
+      </div>
+      <div class="versuch-foot"><button class="solve-btn" data-sol="A">Musterlösung anzeigen</button></div>
+      <div class="solution" id="sol-A">
+        <strong>Musterlösung</strong>
+        <p><b>Beobachtung:</b> Je größer die Stromstärke eingestellt wird, desto mehr Büroklammern werden angezogen.</p>
+        <p><b>Ergebnis:</b> Die Feldstärke der Spule nimmt mit steigender Stromstärke zu.</p>
+        <p><b>Begründung:</b> Der elektrische Strom erzeugt das Magnetfeld. Ein größerer Strom bedeutet mehr bewegte Ladung pro Zeit, daher ist die Feldstärke proportional zur Stromstärke (B ~ I).</p>
+      </div>
+    </div>
+
+    <div class="versuch" id="row-B">
+      <div class="versuch-head">
+        <div class="versuch-tag">B</div>
+        <div class="versuch-title">Windungszahl n erhöhen</div>
+      </div>
+      <div class="versuch-body">
+        <div class="field-block">
+          <label>Beobachtung</label>
+          <textarea placeholder="Was passiert mit den Büroklammern?"></textarea>
+        </div>
+        <div class="field-block">
+          <label>Ergebnis</label>
+          <textarea placeholder="Wie verändert sich die Feldstärke?"></textarea>
+        </div>
+        <div class="field-block">
+          <label>Begründung</label>
+          <textarea placeholder="Warum ist das so?"></textarea>
+        </div>
+      </div>
+      <div class="versuch-foot"><button class="solve-btn" data-sol="B">Musterlösung anzeigen</button></div>
+      <div class="solution" id="sol-B">
+        <strong>Musterlösung</strong>
+        <p><b>Beobachtung:</b> Mit mehr Windungen werden deutlich mehr Büroklammern angezogen.</p>
+        <p><b>Ergebnis:</b> Die Feldstärke der Spule nimmt mit steigender Windungszahl zu.</p>
+        <p><b>Begründung:</b> Jede einzelne Windung erzeugt ihr eigenes kleines Magnetfeld. Diese Felder addieren sich, sodass die Gesamtfeldstärke proportional zur Windungszahl ist (B ~ n).</p>
+      </div>
+    </div>
+
+    <div class="versuch" id="row-C">
+      <div class="versuch-head">
+        <div class="versuch-tag">C</div>
+        <div class="versuch-title">Eisenkern einsetzen</div>
+      </div>
+      <div class="versuch-body">
+        <div class="field-block">
+          <label>Beobachtung</label>
+          <textarea placeholder="Was passiert mit den Büroklammern?"></textarea>
+        </div>
+        <div class="field-block">
+          <label>Ergebnis</label>
+          <textarea placeholder="Wie verändert sich die Feldstärke?"></textarea>
+        </div>
+        <div class="field-block">
+          <label>Begründung</label>
+          <textarea placeholder="Warum ist das so?"></textarea>
+        </div>
+      </div>
+      <div class="versuch-foot"><button class="solve-btn" data-sol="C">Musterlösung anzeigen</button></div>
+      <div class="solution" id="sol-C">
+        <strong>Musterlösung</strong>
+        <p><b>Beobachtung:</b> Mit Eisenkern werden bei gleicher Stromstärke und Windungszahl deutlich mehr Büroklammern angezogen als ohne.</p>
+        <p><b>Ergebnis:</b> Der Eisenkern verstärkt das Magnetfeld der Spule erheblich.</p>
+        <p><b>Begründung:</b> Das Eisen wird im Feld der Spule selbst magnetisiert (die kleinen Elementarmagnete im Eisen richten sich aus) und verstärkt dadurch das Gesamtfeld zusätzlich zum Feld der Spule.</p>
+      </div>
+    </div>
+  </div>
+
+  <footer class="note">Ein Modell zur Veranschaulichung – reale Messwerte können abweichen.</footer>
+</div>
+
+<script>
+const currentInput = document.getElementById('current');
+const turnsInput = document.getElementById('turns');
+const coreInput = document.getElementById('core');
+const currentVal = document.getElementById('currentVal');
+const turnsVal = document.getElementById('turnsVal');
+const gaugeFill = document.getElementById('gaugeFill');
+const clipCount = document.getElementById('clipCount');
+const stage = document.getElementById('stage');
+const lockNote = document.getElementById('lockNote');
+const runBtns = document.querySelectorAll('[data-run]');
+
+const MAX_CLIPS = 8;
+
+function computeField(){
+  const I = parseFloat(currentInput.value);
+  const n = parseFloat(turnsInput.value);
+  const core = coreInput.checked;
+  const raw = (I/5) * (n/100) * (core ? 3 : 1);
+  const percent = Math.min(100, Math.round((raw/3)*100));
+  return { I, n, core, percent };
+}
+
+function drawStage(state){
+  const { percent, core } = state;
+  const cx = 200, cy = 155;
+  const coilLeft = 90, coilRight = 260;
+  const loopCount = Math.round(6 + (state.n-10)/90*14); // 6..20 loops
+  const loopSpacing = (coilRight-coilLeft)/loopCount;
+  const radiusY = 46;
+
+  let svg = '';
+
+  // field line arcs (behind coil), density/opacity scale with percent
+  const lineOpacity = 0.15 + (percent/100)*0.65;
+  const lineCount = 1 + Math.round(percent/100*3);
+  for(let i=0;i<lineCount;i++){
+    const spread = 30 + i*26;
+    svg += `<path d="M ${coilLeft-10} ${cy} C ${coilLeft-40-spread} ${cy-70-i*10}, ${coilRight+40+spread} ${cy-70-i*10}, ${coilRight+10} ${cy}"
+      fill="none" stroke="#2F6FED" stroke-width="2" stroke-linecap="round" opacity="${lineOpacity.toFixed(2)}"/>`;
+    svg += `<path d="M ${coilLeft-10} ${cy} C ${coilLeft-40-spread} ${cy+70+i*10}, ${coilRight+40+spread} ${cy+70+i*10}, ${coilRight+10} ${cy}"
+      fill="none" stroke="#2F6FED" stroke-width="2" stroke-linecap="round" opacity="${lineOpacity.toFixed(2)}"/>`;
+  }
+
+  // iron core
+  if(core){
+    svg += `<rect x="${coilLeft-6}" y="${cy-22}" width="${coilRight-coilLeft+12}" height="44" rx="6"
+      fill="#8C93A0" stroke="#5F6673" stroke-width="1.5"/>`;
+    svg += `<rect x="${coilLeft-6}" y="${cy-22}" width="${coilRight-coilLeft+12}" height="14" rx="6" fill="#AEB4BE" opacity="0.6"/>`;
+  }
+
+  // coil loops (copper wire ellipses, back half dashed to suggest depth)
+  for(let i=0;i<=loopCount;i++){
+    const x = coilLeft + i*loopSpacing;
+    svg += `<ellipse cx="${x}" cy="${cy}" rx="9" ry="${radiusY}" fill="none" stroke="#8A4A14" stroke-width="4" stroke-dasharray="0 ${Math.PI*radiusY} 999" />`;
+    svg += `<path d="M ${x-9} ${cy} A 9 ${radiusY} 0 0 1 ${x+9} ${cy}" fill="none" stroke="#C87F41" stroke-width="4" stroke-linecap="round"/>`;
+    svg += `<path d="M ${x-9} ${cy} A 9 ${radiusY} 0 0 0 ${x+9} ${cy}" fill="none" stroke="#8A4A14" stroke-width="4" stroke-linecap="round" opacity="0.85"/>`;
+  }
+
+  // wire leads + current arrows
+  svg += `<line x1="${coilLeft-9}" y1="${cy}" x2="${coilLeft-35}" y2="${cy-40}" stroke="#8A4A14" stroke-width="4" stroke-linecap="round"/>`;
+  svg += `<line x1="${coilRight+9}" y1="${cy}" x2="${coilRight+35}" y2="${cy-40}" stroke="#8A4A14" stroke-width="4" stroke-linecap="round"/>`;
+  const arrowOn = state.I > 0;
+  if(arrowOn){
+    const ax = coilLeft-24, ay = cy-24;
+    svg += `<polygon points="${ax-6},${ay+4} ${ax+6},${ay+4} ${ax},${ay-8}" fill="#B5651D"/>`;
+  }
+
+  // battery symbol
+  svg += `<line x1="${coilLeft-35}" y1="${cy-40}" x2="${coilRight+35}" y2="${cy-40}" stroke="#8A4A14" stroke-width="0" />`;
+  svg += `<g transform="translate(200,60)">
+      <rect x="-26" y="-14" width="52" height="28" rx="4" fill="#FFFFFF" stroke="#16233B" stroke-width="1.5"/>
+      <text x="0" y="6" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="13" font-weight="600" fill="#16233B">${state.I.toFixed(1)} A</text>
+    </g>`;
+  svg += `<line x1="${coilLeft-35}" y1="${cy-40}" x2="174" y2="60" stroke="#8A4A14" stroke-width="4"/>`;
+  svg += `<line x1="226" y1="60" x2="${coilRight+35}" y2="${cy-40}" stroke="#8A4A14" stroke-width="4"/>`;
+
+  // paperclips to the right
+  const clips = Math.round((percent/100)*MAX_CLIPS);
+  const clipStartX = coilRight + 55;
+  for(let i=0;i<MAX_CLIPS;i++){
+    const attracted = i < clips;
+    const restX = clipStartX + 60 + (i%4)*20;
+    const restY = 220 + Math.floor(i/4)*22;
+    const targetX = coilRight + 14 + (i%2)*6;
+    const targetY = cy - 24 + Math.floor(i/2)*10 - 12;
+    const x = attracted ? targetX : restX;
+    const y = attracted ? targetY : restY;
+    const rot = attracted ? -20 : (i%2===0? 8:-8);
+    svg += `<g transform="translate(${x},${y}) rotate(${rot})" opacity="${attracted?1:0.55}">
+      <path d="M -7 -3 A 4 4 0 1 1 -7 5 L 7 5 A 4 4 0 1 0 7 -3 L -7 -3" fill="none" stroke="#6B7280" stroke-width="2"/>
+    </g>`;
+  }
+
+  // coil label
+  svg += `<text x="${(coilLeft+coilRight)/2}" y="${cy+80}" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="#4C5C77">n = ${state.n} Windungen${core? ' · Eisenkern':''}</text>`;
+
+  stage.innerHTML = svg;
+}
+
+function update(){
+  const state = computeField();
+  currentVal.textContent = state.I.toFixed(1) + ' A';
+  turnsVal.textContent = state.n;
+  gaugeFill.style.width = state.percent + '%';
+  const clips = Math.round((state.percent/100)*MAX_CLIPS);
+  clipCount.innerHTML = clips + '<span> / ' + MAX_CLIPS + '</span>';
+  drawStage(state);
+}
+
+currentInput.addEventListener('input', update);
+turnsInput.addEventListener('input', update);
+coreInput.addEventListener('change', update);
+
+// Versuchssteuerung: jeweils nur eine Größe frei, Rest gesperrt
+function setLock(which){
+  runBtns.forEach(b => b.classList.toggle('active', b.dataset.run === which));
+  if(which === 'A'){
+    turnsInput.value = 50; coreInput.checked = false;
+    currentInput.disabled = false; turnsInput.disabled = true; coreInput.disabled = true;
+    lockNote.textContent = 'Windungszahl (50) und Eisenkern (aus) sind konstant gehalten – nur die Stromstärke ist frei einstellbar.';
+  } else if(which === 'B'){
+    currentInput.value = 2.5; coreInput.checked = false;
+    currentInput.disabled = true; turnsInput.disabled = false; coreInput.disabled = true;
+    lockNote.textContent = 'Stromstärke (2,5 A) und Eisenkern (aus) sind konstant gehalten – nur die Windungszahl ist frei einstellbar.';
+  } else if(which === 'C'){
+    currentInput.value = 2.5; turnsInput.value = 50;
+    currentInput.disabled = true; turnsInput.disabled = true; coreInput.disabled = false;
+    lockNote.textContent = 'Stromstärke (2,5 A) und Windungszahl (50) sind konstant gehalten – nur der Eisenkern wird verändert.';
+  } else {
+    currentInput.disabled = false; turnsInput.disabled = false; coreInput.disabled = false;
+    lockNote.textContent = 'Freies Experimentieren: alle drei Größen sind veränderbar.';
+  }
+  update();
+}
+
+runBtns.forEach(btn => btn.addEventListener('click', () => setLock(btn.dataset.run)));
+
+document.querySelectorAll('.solve-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const sol = document.getElementById('sol-' + btn.dataset.sol);
+    const showing = sol.classList.toggle('show');
+    btn.textContent = showing ? 'Musterlösung ausblenden' : 'Musterlösung anzeigen';
+  });
+});
+
+setLock('frei');
+</script>
+</body>
+</html>
 
