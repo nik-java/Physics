@@ -1,1 +1,414 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Flaschenzug-Simulator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f4f1ea;
+    --ink:#232323;
+    --ink-soft:#5b5750;
+    --line:#d8d2c4;
+    --rust:#b5502a;
+    --rust-dim:#e7b7a0;
+    --teal:#1f5f66;
+    --teal-dim:#c9e0df;
+    --panel:#ffffff;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#1b1a17;
+      --ink:#f1ede4;
+      --ink-soft:#b9b3a6;
+      --line:#3a382f;
+      --rust:#e08a5c;
+      --rust-dim:#5a3324;
+      --teal:#5fb3ba;
+      --teal-dim:#20393a;
+      --panel:#242320;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#1b1a17;
+    --ink:#f1ede4;
+    --ink-soft:#b9b3a6;
+    --line:#3a382f;
+    --rust:#e08a5c;
+    --rust-dim:#5a3324;
+    --teal:#5fb3ba;
+    --teal-dim:#20393a;
+    --panel:#242320;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Public Sans', system-ui, sans-serif;
+    min-height:100vh;
+    padding:28px 20px 60px;
+  }
+  .wrap{max-width:1080px;margin:0 auto;}
+
+  header{margin-bottom:22px;}
+  h1{
+    font-size:clamp(1.5rem, 3vw, 2.1rem);
+    font-weight:700;
+    margin:0 0 6px;
+    letter-spacing:-0.01em;
+  }
+  header p{
+    margin:0;
+    color:var(--ink-soft);
+    font-size:0.98rem;
+    max-width:62ch;
+    line-height:1.5;
+  }
+
+  .layout{
+    display:grid;
+    grid-template-columns: 220px 1fr 230px;
+    gap:18px;
+    align-items:start;
+  }
+  @media (max-width: 880px){
+    .layout{grid-template-columns:1fr;}
+  }
+
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:16px 16px 18px;
+  }
+
+  .card h2{
+    font-size:0.78rem;
+    font-weight:600;
+    margin:0 0 14px;
+    color:var(--ink-soft);
+    border-bottom:1px solid var(--line);
+    padding-bottom:8px;
+  }
+
+  .field{margin-bottom:20px;}
+  .field:last-child{margin-bottom:0;}
+  .field label{
+    display:flex;
+    justify-content:space-between;
+    font-size:0.86rem;
+    margin-bottom:8px;
+    gap:6px;
+  }
+  .field label .val{
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:600;
+    color:var(--rust);
+  }
+  input[type=range]{
+    width:100%;
+    accent-color:var(--rust);
+    height:4px;
+  }
+
+  .hint{
+    font-size:0.8rem;
+    color:var(--ink-soft);
+    line-height:1.5;
+    margin-top:14px;
+  }
+
+  .stage{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:10px 10px 4px;
+    overflow:hidden;
+  }
+  .stage svg{display:block; width:100%; height:auto; touch-action:none;}
+
+  .drag-tip{
+    text-align:center;
+    font-size:0.78rem;
+    color:var(--ink-soft);
+    padding:8px 0 4px;
+  }
+
+  .readout{
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+  .metric{
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:10px 12px;
+  }
+  .metric .m-label{
+    font-size:0.72rem;
+    color:var(--ink-soft);
+    margin-bottom:4px;
+  }
+  .metric .m-value{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:1.3rem;
+    font-weight:600;
+  }
+  .metric.accent .m-value{color:var(--rust);}
+  .metric.teal .m-value{color:var(--teal);}
+  .status{
+    text-align:center;
+    font-weight:600;
+    font-size:0.92rem;
+    padding:10px;
+    border-radius:8px;
+    transition:background .25s, color .25s;
+  }
+  .status.lifting{background:var(--teal-dim); color:var(--teal);}
+  .status.idle{background:var(--line); color:var(--ink-soft);}
+
+  footer{
+    margin-top:22px;
+    font-size:0.82rem;
+    color:var(--ink-soft);
+    line-height:1.6;
+    border-top:1px solid var(--line);
+    padding-top:14px;
+  }
+  footer b{color:var(--ink);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Flaschenzug-Simulator</h1>
+    <p>Stelle die Anzahl der losen Rollen und die Gewichtskraft der Last ein. Ziehe dann am Griff im Bild, um die Last zu heben.</p>
+  </header>
+
+  <div class="layout">
+
+    <div class="card">
+      <h2>Einstellungen</h2>
+      <div class="field">
+        <label>Lose Rollen <span class="val" id="mVal">2</span></label>
+        <input type="range" id="mSlider" min="1" max="3" step="1" value="2">
+      </div>
+      <div class="field">
+        <label>Last <span class="val" id="lastVal">400 N</span></label>
+        <input type="range" id="lastSlider" min="100" max="1000" step="50" value="400">
+      </div>
+      <div class="hint">
+        Tragende Seilabschnitte: n = 2 &middot; lose Rollen<br><br>
+        Notwendige Zugkraft (ideal, reibungsfrei):<br>
+        <span id="theoryText" style="font-family:'IBM Plex Mono',monospace;color:var(--ink);">F = G / n</span>
+      </div>
+    </div>
+
+    <div class="stage">
+      <svg id="svg" viewBox="0 0 640 460" xmlns="http://www.w3.org/2000/svg"></svg>
+      <div class="drag-tip">↕ Am Griff ziehen und halten, um zu heben</div>
+    </div>
+
+    <div class="card readout">
+      <h2>Wirkende Kraft</h2>
+      <div class="metric accent">
+        <div class="m-label">Gezogene Zugkraft F</div>
+        <div class="m-value" id="pullForce">0 N</div>
+      </div>
+      <div class="metric teal">
+        <div class="m-label">Kraft auf die Last (F &middot; n)</div>
+        <div class="m-value" id="loadForce">0 N</div>
+      </div>
+      <div class="metric">
+        <div class="m-label">Notwendige Zugkraft</div>
+        <div class="m-value" id="neededForce">100 N</div>
+      </div>
+      <div class="status idle" id="statusBox">Last liegt auf</div>
+    </div>
+
+  </div>
+
+  <footer>
+    <b>So funktioniert's:</b> Ein idealer Flaschenzug mit n tragenden Seilabschnitten verringert die nötige Zugkraft um den Faktor n:
+    F<sub>Zug</sub> = F<sub>G</sub> / n. Dafür muss das Seilende um den n-fachen Weg gezogen werden, den die Last sich hebt.
+    Reibung und Seilgewicht werden hier vernachlässigt (idealer Flaschenzug).
+  </footer>
+</div>
+
+<script>
+(function(){
+  const svg = document.getElementById('svg');
+  const mSlider = document.getElementById('mSlider');
+  const lastSlider = document.getElementById('lastSlider');
+  const mVal = document.getElementById('mVal');
+  const lastVal = document.getElementById('lastVal');
+  const theoryText = document.getElementById('theoryText');
+  const pullForceEl = document.getElementById('pullForce');
+  const loadForceEl = document.getElementById('loadForce');
+  const neededForceEl = document.getElementById('neededForce');
+  const statusBox = document.getElementById('statusBox');
+
+  const ceilingY = 26;
+  const fixedY = 92;
+  const baseMovableY = 300;
+  const maxLift = 150;
+  const pulleyR = 20;
+
+  let m = parseInt(mSlider.value, 10);
+  let last = parseInt(lastSlider.value, 10);
+  let liftAmount = 0;
+  let appliedForce = 0;
+  let dragging = false;
+  let dragStartY = 0;
+  let dragStartOffset = 0;
+  let handleOffset = 0;
+  const maxDrag = 150;
+  const maxDragForce = 650;
+
+  function layoutX(){
+    const cx = 340, gap = 95;
+    const xs = [];
+    for(let i=0;i<m;i++){
+      xs.push(cx - (m-1)*gap/2 + i*gap);
+    }
+    return xs;
+  }
+
+  function n(){ return 2*m; }
+  function neededForce(){ return last / n(); }
+
+  function pulleySvg(x, y){
+    return `<g>
+      <circle cx="${x}" cy="${y}" r="${pulleyR}" fill="var(--panel)" stroke="var(--ink)" stroke-width="3"/>
+      <circle cx="${x}" cy="${y}" r="3.5" fill="var(--ink)"/>
+    </g>`;
+  }
+
+  function buildAndRender(){
+    const xs = layoutX();
+    const anchorX = xs[0] - 55;
+    const handleX = xs[xs.length-1] + 90;
+    const movableY = baseMovableY - liftAmount;
+    const loadTopY = movableY + 34;
+    const loadH = 54;
+    const handleY = fixedY + 40 + handleOffset;
+
+    let svgParts = [];
+
+    svgParts.push(`<defs>
+      <pattern id="hatch" width="10" height="10" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+        <line x1="0" y1="0" x2="0" y2="10" stroke="var(--rust)" stroke-width="3" opacity="0.55"/>
+      </pattern>
+    </defs>`);
+    svgParts.push(`<rect x="20" y="0" width="600" height="${ceilingY}" fill="var(--ink)" opacity="0.08"/>`);
+    svgParts.push(`<rect x="20" y="0" width="600" height="${ceilingY}" fill="url(#hatch)"/>`);
+    svgParts.push(`<line x1="20" y1="${ceilingY}" x2="620" y2="${ceilingY}" stroke="var(--ink)" stroke-width="2"/>`);
+
+    xs.forEach(x=>{
+      svgParts.push(`<line x1="${x}" y1="${ceilingY}" x2="${x}" y2="${fixedY-pulleyR+4}" stroke="var(--ink-soft)" stroke-width="5"/>`);
+    });
+
+    let ropePts = [[anchorX, ceilingY], [anchorX, movableY], [xs[0], movableY]];
+    for(let i=0;i<m;i++){
+      ropePts.push([xs[i], fixedY]);
+      if(i < m-1){ ropePts.push([xs[i+1], movableY]); }
+    }
+    ropePts.push([handleX, fixedY]);
+    ropePts.push([handleX, handleY]);
+
+    const ropeD = ropePts.map((p,i)=> (i===0?'M':'L') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
+    svgParts.push(`<path d="${ropeD}" fill="none" stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round"/>`);
+
+    if(m > 1){
+      svgParts.push(`<line x1="${xs[0]}" y1="${movableY+pulleyR}" x2="${xs[xs.length-1]}" y2="${movableY+pulleyR}" stroke="var(--ink)" stroke-width="6" stroke-linecap="round"/>`);
+    }
+    const blockCx = (xs[0]+xs[xs.length-1])/2;
+    svgParts.push(`<line x1="${blockCx}" y1="${movableY+pulleyR}" x2="${blockCx}" y2="${loadTopY}" stroke="var(--ink)" stroke-width="2.5"/>`);
+
+    xs.forEach(x=>{ svgParts.push(pulleySvg(x, fixedY)); });
+    xs.forEach(x=>{ svgParts.push(pulleySvg(x, movableY)); });
+
+    svgParts.push(`<rect x="${blockCx-70}" y="${loadTopY}" width="140" height="${loadH}" rx="4"
+        fill="var(--rust-dim)" stroke="var(--rust)" stroke-width="2"/>`);
+    svgParts.push(`<text x="${blockCx}" y="${loadTopY+loadH/2+5}" text-anchor="middle"
+        font-family="Public Sans, sans-serif" font-weight="600" font-size="16" fill="var(--ink)">Last · ${last} N</text>`);
+
+    svgParts.push(`<circle id="handleCircle" cx="${handleX}" cy="${handleY}" r="14"
+        fill="${dragging ? 'var(--rust)' : 'var(--teal)'}" stroke="var(--ink)" stroke-width="2" style="cursor:grab;"/>`);
+    svgParts.push(`<text x="${handleX}" y="${handleY+34}" text-anchor="middle" font-size="12"
+        fill="var(--ink-soft)" font-family="Public Sans, sans-serif">ziehen ↓</text>`);
+
+    svg.innerHTML = svgParts.join('');
+
+    const handleEl = document.getElementById('handleCircle');
+    handleEl.addEventListener('pointerdown', onPointerDown);
+  }
+
+  function onPointerDown(e){
+    dragging = true;
+    dragStartY = e.clientY;
+    dragStartOffset = handleOffset;
+    try{ e.target.setPointerCapture(e.pointerId); }catch(err){}
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+  }
+  function onPointerMove(e){
+    if(!dragging) return;
+    let dy = e.clientY - dragStartY;
+    handleOffset = Math.min(maxDrag, Math.max(0, dragStartOffset + dy));
+    appliedForce = (handleOffset / maxDrag) * maxDragForce;
+  }
+  function onPointerUp(){
+    dragging = false;
+    window.removeEventListener('pointermove', onPointerMove);
+    window.removeEventListener('pointerup', onPointerUp);
+  }
+
+  function updateReadouts(){
+    const need = neededForce();
+    const loadF = appliedForce * n();
+    pullForceEl.textContent = Math.round(appliedForce) + ' N';
+    loadForceEl.textContent = Math.round(loadF) + ' N';
+    neededForceEl.textContent = Math.round(need) + ' N';
+    theoryText.textContent = `F = ${last} N / ${n()} = ${Math.round(need)} N`;
+    mVal.textContent = m;
+    lastVal.textContent = last + ' N';
+
+    if(loadF >= last - 0.5){
+      statusBox.textContent = liftAmount > maxLift*0.9 ? 'Last angehoben!' : 'Last hebt ab …';
+      statusBox.className = 'status lifting';
+    } else {
+      statusBox.textContent = 'Last liegt auf';
+      statusBox.className = 'status idle';
+    }
+  }
+
+  function frame(){
+    const loadF = appliedForce * n();
+    const target = (loadF >= last) ? maxLift : 0;
+    liftAmount += (target - liftAmount) * 0.09;
+    if(Math.abs(target - liftAmount) < 0.15) liftAmount = target;
+
+    if(!dragging && handleOffset > 0){
+      handleOffset = Math.max(0, handleOffset - 6);
+      appliedForce = (handleOffset / maxDrag) * maxDragForce;
+    }
+
+    buildAndRender();
+    updateReadouts();
+    requestAnimationFrame(frame);
+  }
+
+  mSlider.addEventListener('input', ()=>{ m = parseInt(mSlider.value,10); });
+  lastSlider.addEventListener('input', ()=>{ last = parseInt(lastSlider.value,10); });
+
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
 
