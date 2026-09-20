@@ -129,7 +129,7 @@
     padding:10px 10px 4px;
     overflow:hidden;
   }
-  .stage svg{display:block; width:100%; height:auto; touch-action:none;}
+  .stage svg{display:block; width:100%; height:auto; touch-action:none; user-select:none; -webkit-user-select:none;}
 
   .drag-tip{
     text-align:center;
@@ -195,7 +195,7 @@
       <h2>Einstellungen</h2>
       <div class="field">
         <label>Lose Rollen <span class="val" id="mVal">2</span></label>
-        <input type="range" id="mSlider" min="1" max="3" step="1" value="2">
+        <input type="range" id="mSlider" min="1" max="6" step="1" value="2">
       </div>
       <div class="field">
         <label>Last <span class="val" id="lastVal">400 N</span></label>
@@ -256,7 +256,6 @@
   const fixedY = 92;
   const baseMovableY = 300;
   const maxLift = 150;
-  const pulleyR = 20;
 
   let m = parseInt(mSlider.value, 10);
   let last = parseInt(lastSlider.value, 10);
@@ -269,8 +268,11 @@
   const maxDrag = 150;
   const maxDragForce = 650;
 
+  function pulleyR(){ return m<=3 ? 20 : (m<=5 ? 16 : 13); }
+  function gapX(){ return m<=3 ? 95 : (m<=5 ? 72 : 58); }
+
   function layoutX(){
-    const cx = 340, gap = 95;
+    const cx = 340, gap = gapX();
     const xs = [];
     for(let i=0;i<m;i++){
       xs.push(cx - (m-1)*gap/2 + i*gap);
@@ -281,21 +283,23 @@
   function n(){ return 2*m; }
   function neededForce(){ return last / n(); }
 
-  function pulleySvg(x, y){
+  function pulleySvg(x, y, r){
     return `<g>
-      <circle cx="${x}" cy="${y}" r="${pulleyR}" fill="var(--panel)" stroke="var(--ink)" stroke-width="3"/>
-      <circle cx="${x}" cy="${y}" r="3.5" fill="var(--ink)"/>
+      <circle cx="${x}" cy="${y}" r="${r}" fill="var(--panel)" stroke="var(--ink)" stroke-width="3"/>
+      <circle cx="${x}" cy="${y}" r="${Math.max(2.5,r*0.17)}" fill="var(--ink)"/>
     </g>`;
   }
 
   function buildAndRender(){
     const xs = layoutX();
-    const anchorX = xs[0] - 55;
-    const handleX = xs[xs.length-1] + 90;
+    const r = pulleyR();
     const movableY = baseMovableY - liftAmount;
     const loadTopY = movableY + 34;
     const loadH = 54;
-    const handleY = fixedY + 40 + handleOffset;
+    const blockCx = (xs[0]+xs[xs.length-1])/2;
+    const handleFinalX = Math.max(xs[xs.length-1] + 60, blockCx + 100);
+    const handleBaseY = movableY + 90;
+    const handleYFinal = handleBaseY + handleOffset;
 
     let svgParts = [];
 
@@ -309,37 +313,52 @@
     svgParts.push(`<line x1="20" y1="${ceilingY}" x2="620" y2="${ceilingY}" stroke="var(--ink)" stroke-width="2"/>`);
 
     xs.forEach(x=>{
-      svgParts.push(`<line x1="${x}" y1="${ceilingY}" x2="${x}" y2="${fixedY-pulleyR+4}" stroke="var(--ink-soft)" stroke-width="5"/>`);
+      svgParts.push(`<line x1="${x}" y1="${ceilingY}" x2="${x}" y2="${fixedY-r+4}" stroke="var(--ink-soft)" stroke-width="5"/>`);
     });
 
-    let ropePts = [[anchorX, ceilingY], [anchorX, movableY], [xs[0], movableY]];
-    for(let i=0;i<m;i++){
-      ropePts.push([xs[i], fixedY]);
-      if(i < m-1){ ropePts.push([xs[i+1], movableY]); }
-    }
-    ropePts.push([handleX, fixedY]);
-    ropePts.push([handleX, handleY]);
+    // --- Build rope path with arcs wrapping around each pulley ---
+    // Rule: movable pulley -> entry = LEFT tangent, exit = RIGHT tangent, rope wraps under the BOTTOM.
+    //       fixed pulley    -> entry = RIGHT tangent, exit = LEFT tangent, rope wraps over the TOP.
+    let d = `M ${(xs[0]-r).toFixed(1)} ${movableY.toFixed(1)}`;
 
-    const ropeD = ropePts.map((p,i)=> (i===0?'M':'L') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
-    svgParts.push(`<path d="${ropeD}" fill="none" stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round"/>`);
+    for(let i=0;i<m;i++){
+      const mx = xs[i], fx = xs[i];
+      // arc under bottom of movable pulley i: left tangent -> right tangent
+      d += ` A ${r} ${r} 0 0 0 ${(mx+r).toFixed(1)} ${movableY.toFixed(1)}`;
+      // straight up to fixed pulley i (right tangent, same x offset -> vertical)
+      d += ` L ${(fx+r).toFixed(1)} ${fixedY.toFixed(1)}`;
+      // arc over top of fixed pulley i: right tangent -> left tangent
+      d += ` A ${r} ${r} 0 0 0 ${(fx-r).toFixed(1)} ${fixedY.toFixed(1)}`;
+      if(i < m-1){
+        // straight down to the pulley directly below (its left tangent), then a short
+        // horizontal jog at the bottom row to reach the next movable pulley's left tangent
+        d += ` L ${(fx-r).toFixed(1)} ${movableY.toFixed(1)}`;
+        d += ` L ${(xs[i+1]-r).toFixed(1)} ${movableY.toFixed(1)}`;
+      }
+    }
+    // from last fixed pulley's left tangent, drop down alongside, jog clear of the load, then to the handle
+    d += ` L ${(xs[m-1]-r).toFixed(1)} ${(movableY+6).toFixed(1)}`;
+    d += ` L ${handleFinalX.toFixed(1)} ${(movableY+6).toFixed(1)}`;
+    d += ` L ${handleFinalX.toFixed(1)} ${handleYFinal.toFixed(1)}`;
+
+    svgParts.push(`<path d="${d}" fill="none" stroke="var(--ink)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`);
 
     if(m > 1){
-      svgParts.push(`<line x1="${xs[0]}" y1="${movableY+pulleyR}" x2="${xs[xs.length-1]}" y2="${movableY+pulleyR}" stroke="var(--ink)" stroke-width="6" stroke-linecap="round"/>`);
+      svgParts.push(`<line x1="${xs[0]}" y1="${movableY+r}" x2="${xs[xs.length-1]}" y2="${movableY+r}" stroke="var(--ink)" stroke-width="6" stroke-linecap="round"/>`);
     }
-    const blockCx = (xs[0]+xs[xs.length-1])/2;
-    svgParts.push(`<line x1="${blockCx}" y1="${movableY+pulleyR}" x2="${blockCx}" y2="${loadTopY}" stroke="var(--ink)" stroke-width="2.5"/>`);
+    svgParts.push(`<line x1="${blockCx}" y1="${movableY+r}" x2="${blockCx}" y2="${loadTopY}" stroke="var(--ink)" stroke-width="2.5"/>`);
 
-    xs.forEach(x=>{ svgParts.push(pulleySvg(x, fixedY)); });
-    xs.forEach(x=>{ svgParts.push(pulleySvg(x, movableY)); });
+    xs.forEach(x=>{ svgParts.push(pulleySvg(x, fixedY, r)); });
+    xs.forEach(x=>{ svgParts.push(pulleySvg(x, movableY, r)); });
 
     svgParts.push(`<rect x="${blockCx-70}" y="${loadTopY}" width="140" height="${loadH}" rx="4"
         fill="var(--rust-dim)" stroke="var(--rust)" stroke-width="2"/>`);
     svgParts.push(`<text x="${blockCx}" y="${loadTopY+loadH/2+5}" text-anchor="middle"
         font-family="Public Sans, sans-serif" font-weight="600" font-size="16" fill="var(--ink)">Last · ${last} N</text>`);
 
-    svgParts.push(`<circle id="handleCircle" cx="${handleX}" cy="${handleY}" r="14"
+    svgParts.push(`<circle id="handleCircle" cx="${handleFinalX}" cy="${handleYFinal}" r="14"
         fill="${dragging ? 'var(--rust)' : 'var(--teal)'}" stroke="var(--ink)" stroke-width="2" style="cursor:grab;"/>`);
-    svgParts.push(`<text x="${handleX}" y="${handleY+34}" text-anchor="middle" font-size="12"
+    svgParts.push(`<text x="${handleFinalX}" y="${handleYFinal+34}" text-anchor="middle" font-size="12"
         fill="var(--ink-soft)" font-family="Public Sans, sans-serif">ziehen ↓</text>`);
 
     svg.innerHTML = svgParts.join('');
@@ -349,6 +368,7 @@
   }
 
   function onPointerDown(e){
+    e.preventDefault();
     dragging = true;
     dragStartY = e.clientY;
     dragStartOffset = handleOffset;
@@ -411,4 +431,3 @@
 </script>
 </body>
 </html>
-
