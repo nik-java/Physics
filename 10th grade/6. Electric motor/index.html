@@ -1,1 +1,337 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Der Elektromotor</title>
+<style>
+  :root{
+    --bg:#f6f3ec;
+    --ink:#26241f;
+    --paper:#ffffff;
+    --line:#26241f;
+    --n-red:#c8392a;
+    --s-green:#4a8f3c;
+    --copper:#d98a3d;
+    --accent:#2255aa;
+    --ok:#3a7a3a;
+    --bad:#b23b2e;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-padding-top:env(safe-area-inset-top,0px);}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Iowan Old Style','Palatino Linotype',Georgia,serif;
+    padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);
+  }
+  .wrap{max-width:880px;margin:0 auto;padding:2.2rem 1.4rem 3rem;}
+  h1{
+    font-family:'Iowan Old Style',Georgia,serif;
+    font-size:2rem;
+    font-weight:600;
+    margin:0 0 .2rem;
+    letter-spacing:.2px;
+  }
+  .sub{
+    font-family:Georgia,serif;
+    font-style:italic;
+    color:#5c584e;
+    margin:0 0 2rem;
+    font-size:1.05rem;
+  }
+  section{margin-bottom:2.6rem;}
+  h2{
+    font-size:1.15rem;
+    font-weight:600;
+    border-bottom:2px solid var(--ink);
+    padding-bottom:.35rem;
+    margin:0 0 1.1rem;
+  }
+
+  /* ---------- Matching ---------- */
+  .match-row{
+    display:grid;
+    grid-template-columns:1fr auto auto;
+    gap:.9rem;
+    align-items:center;
+    padding:.7rem 0;
+    border-bottom:1px solid #ddd8c9;
+  }
+  .term{font-size:1.02rem;}
+  .term b{color:var(--accent);font-weight:600;}
+  select{
+    font-family:inherit;
+    font-size:1rem;
+    padding:.4rem .6rem;
+    border:1.5px solid var(--ink);
+    border-radius:4px;
+    background:var(--paper);
+    color:var(--ink);
+    min-width:3.2rem;
+  }
+  .mark{width:1.4rem;text-align:center;font-size:1.15rem;}
+  .mark.ok{color:var(--ok);}
+  .mark.bad{color:var(--bad);}
+  .defs{
+    margin-top:1rem;
+    font-size:.92rem;
+    color:#5c584e;
+    line-height:1.7;
+  }
+  .defs span{font-weight:600;color:var(--ink);}
+  .btnrow{display:flex;gap:.8rem;align-items:center;margin-top:1.2rem;flex-wrap:wrap;}
+  button{
+    font-family:inherit;
+    font-size:.98rem;
+    padding:.55rem 1.2rem;
+    border:1.5px solid var(--ink);
+    border-radius:4px;
+    background:var(--ink);
+    color:var(--paper);
+    cursor:pointer;
+  }
+  button.secondary{background:var(--paper);color:var(--ink);}
+  button:active{transform:translateY(1px);}
+  #matchFeedback{font-size:.95rem;min-height:1.4em;}
+
+  /* ---------- Simulation ---------- */
+  .simbox{
+    background:var(--paper);
+    border:1.5px solid var(--ink);
+    border-radius:6px;
+    padding:1.2rem 1.2rem 1.5rem;
+  }
+  .controls{
+    display:flex;
+    gap:1.6rem;
+    align-items:center;
+    flex-wrap:wrap;
+    margin-bottom:1rem;
+  }
+  .switch-group{display:flex;align-items:center;gap:.6rem;}
+  .switch{
+    position:relative;width:64px;height:32px;
+    background:#cfc9b6;border:1.5px solid var(--ink);border-radius:20px;
+    cursor:pointer;flex-shrink:0;
+  }
+  .switch .knob{
+    position:absolute;top:2px;left:2px;width:26px;height:26px;
+    background:var(--paper);border:1.5px solid var(--ink);border-radius:50%;
+    transition:left .25s ease;
+  }
+  .switch.on .knob{left:34px;}
+  .switch.on{background:var(--copper);}
+  .modeLabel{font-weight:600;min-width:7.5rem;}
+  #startBtn{min-width:8rem;}
+  .hint{font-size:.85rem;color:#6b6656;max-width:22rem;}
+
+  svg{width:100%;height:auto;display:block;}
+  .rotorGroup{transform-origin:260px 168px;}
+  .spin-dc{animation:spinDC 1.4s linear infinite;}
+  .spin-dc.slow{animation-duration:2.6s;}
+  .spin-ac{animation:spinAC 1s ease-in-out infinite;}
+  @keyframes spinDC{to{transform:rotate(360deg);}}
+  @keyframes spinAC{
+    0%,100%{transform:rotate(0deg);}
+    25%{transform:rotate(22deg);}
+    50%{transform:rotate(0deg);}
+    75%{transform:rotate(-22deg);}
+  }
+  .paused{animation-play-state:paused;}
+  .flow-dc circle{animation:flowDC 1.1s linear infinite;}
+  @keyframes flowDC{
+    0%{opacity:0;offset-distance:0%;}
+    10%{opacity:1;}
+    90%{opacity:1;}
+    100%{opacity:0;offset-distance:100%;}
+  }
+  .arrowLabel{font-size:13px;font-family:Georgia,serif;fill:var(--ink);}
+  .flip{animation:flip 1s steps(1) infinite;}
+  @keyframes flip{
+    0%,49%{opacity:1;}
+    50%,100%{opacity:0;}
+  }
+  .flip2{animation:flip2 1s steps(1) infinite;}
+  @keyframes flip2{
+    0%,49%{opacity:0;}
+    50%,100%{opacity:1;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .spin-dc,.spin-ac,.flow-dc circle,.flip,.flip2{animation:none !important;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Der Elektromotor</h1>
+  <p class="sub">Zuordnung der Bauteile und Simulation mit Gleich- und Wechselstrom</p>
+
+  <section>
+    <h2>1 · Ordne die Begriffe zu</h2>
+
+    <div id="rows">
+      <div class="match-row" data-answer="D">
+        <div class="term"><b>1</b> &nbsp;Dauermagnet</div>
+        <select><option value="">–</option><option>A</option><option>B</option><option>C</option><option>D</option></select>
+        <div class="mark"></div>
+      </div>
+      <div class="match-row" data-answer="A">
+        <div class="term"><b>2</b> &nbsp;Spule / Anker</div>
+        <select><option value="">–</option><option>A</option><option>B</option><option>C</option><option>D</option></select>
+        <div class="mark"></div>
+      </div>
+      <div class="match-row" data-answer="C">
+        <div class="term"><b>3</b> &nbsp;Kommutator (Stromwender)</div>
+        <select><option value="">–</option><option>A</option><option>B</option><option>C</option><option>D</option></select>
+        <div class="mark"></div>
+      </div>
+      <div class="match-row" data-answer="B">
+        <div class="term"><b>4</b> &nbsp;Bürsten / Schleifkontakte</div>
+        <select><option value="">–</option><option>A</option><option>B</option><option>C</option><option>D</option></select>
+        <div class="mark"></div>
+      </div>
+    </div>
+
+    <div class="defs">
+      <div><span>A</span> — trägt die stromdurchflossenen Wicklungen und dreht sich</div>
+      <div><span>B</span> — überträgt den Strom auf den drehenden Teil</div>
+      <div><span>C</span> — sorgt für die regelmäßige Umpolung der Stromrichtung in der Spule</div>
+      <div><span>D</span> — erzeugt das Magnetfeld, in dem die Spule liegt</div>
+    </div>
+
+    <div class="btnrow">
+      <button id="checkBtn">Prüfen</button>
+      <button class="secondary" id="resetBtn">Zurücksetzen</button>
+      <span id="matchFeedback"></span>
+    </div>
+  </section>
+
+  <section>
+    <h2>2 · Motor in Bewegung</h2>
+
+    <div class="simbox">
+      <div class="controls">
+        <button id="startBtn">Motor starten</button>
+        <div class="switch-group">
+          <div class="switch" id="komSwitch"><div class="knob"></div></div>
+          <div class="modeLabel" id="modeLabel">Mit Kommutator</div>
+        </div>
+      </div>
+      <p class="hint" id="hintText">Mit Kommutator: Er polt die Spule bei jeder halben Umdrehung um → der Anker dreht sich gleichmäßig immer in dieselbe Richtung weiter.</p>
+
+      <svg viewBox="0 0 520 320" xmlns="http://www.w3.org/2000/svg">
+        <!-- Stator: red (N) left, green (S) right -->
+        <path d="M60 60 L60 260 L170 260 L170 210 A85 85 0 0 1 170 130 L170 60 Z" fill="#e05a45" stroke="var(--ink)" stroke-width="2"/>
+        <path d="M460 60 L460 260 L350 260 L350 210 A85 85 0 0 0 350 130 L350 60 Z" fill="#5fae4e" stroke="var(--ink)" stroke-width="2"/>
+        <text x="90" y="45" class="arrowLabel" font-weight="600">N</text>
+        <text x="435" y="45" class="arrowLabel" font-weight="600">S</text>
+
+        <!-- rotor group: coil + commutator, rotates -->
+        <g class="rotorGroup" id="rotor">
+          <ellipse cx="260" cy="168" rx="55" ry="20" fill="none" stroke="var(--copper)" stroke-width="7" transform="rotate(20 260 168)"/>
+          <ellipse cx="260" cy="168" rx="55" ry="20" fill="none" stroke="var(--copper)" stroke-width="7" transform="rotate(-20 260 168)"/>
+          <circle cx="260" cy="168" r="26" fill="#e8b06a" stroke="var(--ink)" stroke-width="2"/>
+          <path d="M260 142 A26 26 0 0 1 260 194 Z" fill="#c8392a" stroke="var(--ink)" stroke-width="1.5"/>
+          <path d="M260 194 A26 26 0 0 1 260 142 Z" fill="#3a6fb0" stroke="var(--ink)" stroke-width="1.5"/>
+        </g>
+
+        <!-- brushes (fixed) -->
+        <rect x="248" y="205" width="7" height="26" fill="#888" stroke="var(--ink)"/>
+        <rect x="265" y="205" width="7" height="26" fill="#888" stroke="var(--ink)"/>
+
+        <!-- wires down to terminals -->
+        <path d="M251 231 L251 280 L120 280" fill="none" stroke="var(--copper)" stroke-width="5"/>
+        <path d="M268 231 L268 260 L400 260 L400 280" fill="none" stroke="var(--copper)" stroke-width="5"/>
+        <line x1="400" y1="280" x2="400" y2="280" stroke="none"/>
+        <path d="M268 260 L400 260 L400 280" fill="none" stroke="none"/>
+        <path d="M120 280 L120 280" stroke="none"/>
+
+        <!-- current direction arrow (immer Gleichstrom, eine Richtung) -->
+        <g id="arrowDC">
+          <text x="150" y="300" class="arrowLabel" fill="var(--accent)">→ Strom fließt</text>
+        </g>
+
+        <circle cx="120" cy="280" r="7" fill="#333"/>
+        <circle cx="400" cy="280" r="7" fill="#333"/>
+        <text x="95" y="305" class="arrowLabel">Klemme</text>
+        <text x="380" y="305" class="arrowLabel">Klemme</text>
+      </svg>
+    </div>
+  </section>
+
+</div>
+
+<script>
+  // matching
+  const rows = document.querySelectorAll('.match-row');
+  document.getElementById('checkBtn').addEventListener('click', () => {
+    let correct = 0;
+    rows.forEach(row => {
+      const sel = row.querySelector('select');
+      const mark = row.querySelector('.mark');
+      if (sel.value === row.dataset.answer) {
+        mark.textContent = '✓';
+        mark.className = 'mark ok';
+        correct++;
+      } else if (sel.value === '') {
+        mark.textContent = '';
+        mark.className = 'mark';
+      } else {
+        mark.textContent = '✗';
+        mark.className = 'mark bad';
+      }
+    });
+    document.getElementById('matchFeedback').textContent =
+      correct === rows.length ? 'Richtig — alle vier passen!' : `${correct} von ${rows.length} richtig`;
+    document.getElementById('matchFeedback').style.color = correct === rows.length ? 'var(--ok)' : 'var(--ink)';
+  });
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    rows.forEach(row => {
+      row.querySelector('select').value = '';
+      row.querySelector('.mark').textContent = '';
+      row.querySelector('.mark').className = 'mark';
+    });
+    document.getElementById('matchFeedback').textContent = '';
+  });
+
+  // simulation
+  const rotor = document.getElementById('rotor');
+  const startBtn = document.getElementById('startBtn');
+  const komSwitch = document.getElementById('komSwitch');
+  const modeLabel = document.getElementById('modeLabel');
+  const hintText = document.getElementById('hintText');
+
+  let running = false;
+  let ohneKommutator = false;
+
+  function applyState() {
+    rotor.classList.remove('spin-dc','spin-ac','paused');
+    if (running) {
+      rotor.classList.add(ohneKommutator ? 'spin-ac' : 'spin-dc');
+    }
+    modeLabel.textContent = ohneKommutator ? 'Ohne Kommutator' : 'Mit Kommutator';
+    hintText.textContent = ohneKommutator
+      ? 'Ohne Kommutator: Die Stromrichtung in der Spule bleibt gleich. Nach einer halben Drehung wirkt die Kraft daher in die Gegenrichtung — der Anker pendelt nur hin und her, statt sich weiterzudrehen.'
+      : 'Mit Kommutator: Er polt die Spule bei jeder halben Umdrehung um → der Anker dreht sich gleichmäßig immer in dieselbe Richtung weiter.';
+    startBtn.textContent = running ? 'Motor stoppen' : 'Motor starten';
+  }
+
+  startBtn.addEventListener('click', () => {
+    running = !running;
+    applyState();
+  });
+  komSwitch.addEventListener('click', () => {
+    ohneKommutator = !ohneKommutator;
+    komSwitch.classList.toggle('on', ohneKommutator);
+    applyState();
+  });
+
+  applyState();
+</script>
+</body>
+</html>
 
