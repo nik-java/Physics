@@ -1,1 +1,198 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Elektromagnetische Induktion</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#1d2330;--mu:#5b6475;--bd:#d8dce4;--ac:#2563eb}
+@media (prefers-color-scheme:dark){:root{--bg:#161a22;--card:#1f2430;--tx:#e8ebf2;--mu:#9aa3b5;--bd:#333a4a;--ac:#6ea0ff}}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--tx);padding:12px}
+.w{max-width:900px;margin:auto}
+h1{font-size:1.3rem;margin:4px 0 10px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px;margin-bottom:12px}
+canvas{width:100%;height:auto;display:block;touch-action:none;border-radius:8px;background:var(--card)}
+.row{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+label{font-size:.9rem;color:var(--mu)}
+input[type=range]{width:200px;accent-color:var(--ac)}
+button{background:var(--ac);color:#fff;border:0;border-radius:8px;padding:8px 14px;font-size:.9rem;cursor:pointer}
+button.s{background:transparent;color:var(--ac);border:1px solid var(--ac)}
+.out{font-variant-numeric:tabular-nums;font-weight:600}
+.hint{font-size:.88rem;color:var(--mu);line-height:1.5}
+.box{background:rgba(37,99,235,.08);border-left:4px solid var(--ac);padding:8px 12px;border-radius:6px;font-size:.92rem;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="w">
+<h1>Elektromagnetische Induktion – Leiter im Magnetfeld bewegen</h1>
+<div class="card">
+<canvas id="c" width="860" height="420"></canvas>
+<div class="hint">Klicke auf „Start“: Der Stab bewegt sich langsam nach rechts durch das Magnetfeld. Du kannst ihn auch selbst ziehen.</div>
+</div>
+<div class="card">
+<div class="row">
+<label>Windungen n: <span class="out" id="nv">1</span><br><input type="range" id="n" min="1" max="10" value="1"></label>
+<label>Magnetfeld B: <span class="out" id="bv">1.0</span><br><input type="range" id="b" min="2" max="20" value="10"></label>
+<label>Geschwindigkeit v: <span class="out" id="sv">45</span><br><input type="range" id="sp" min="15" max="120" value="45"></label>
+<label>Winkel zum Feld: <span class="out" id="av">90°</span><br><input type="range" id="a" min="0" max="90" value="90"></label>
+</div>
+<div class="row" style="margin-top:10px">
+<button id="auto">▶ Start: Stab langsam nach rechts</button>
+<button class="s" id="flip">Feldrichtung umkehren</button>
+<button class="s" id="rst">Zurücksetzen</button>
+<label><input type="checkbox" id="tg" checked> Elektronen &amp; Kräfte zeigen</label>
+</div>
+</div>
+<div class="card">
+<b>Rechte-Hand-Regel (UVW) – technische Stromrichtung</b>
+<div class="hint" id="uvw" style="margin-top:6px"></div>
+</div>
+<div class="card">
+<div class="box" id="info">Bewege den Stab.</div>
+</div>
+</div>
+<script>
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const W=cv.width,H=cv.height;
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+// Magnetbereich (zwischen Nord und Süd), Stab bewegt sich in x
+const gap={x1:200,x2:660,y1:150,y2:290};
+const START=140,END=740;let flow=0,I=0,dirB=1;let x=140,vx=0,lastX=x,lastT=performance.now(),drag=false,auto=false,ph=0,U=0,smooth=0;
+let el=[];for(let i=0;i<7;i++)el.push(i/6);
+const n=document.getElementById('n'),b=document.getElementById('b'),a=document.getElementById('a'),tg=document.getElementById('tg');
+function pos(e){const r=cv.getBoundingClientRect();const t=e.touches?e.touches[0]:e;return (t.clientX-r.left)*W/r.width}
+function down(e){drag=true;auto=false;btn.textContent='▶ Start: Stab langsam nach rechts';x=clamp(pos(e));e.preventDefault()}
+function move(e){if(drag){x=clamp(pos(e));e.preventDefault()}}
+function up(){drag=false}
+const clamp=v=>Math.max(60,Math.min(W-60,v));
+cv.addEventListener('mousedown',down);addEventListener('mousemove',move);addEventListener('mouseup',up);
+cv.addEventListener('touchstart',down,{passive:false});cv.addEventListener('touchmove',move,{passive:false});cv.addEventListener('touchend',up);
+const btn=document.getElementById('auto');
+btn.onclick=()=>{if(auto){auto=false;btn.textContent='▶ Weiter';return}if(x>=END-1||x<=START+1||btn.textContent.startsWith('↻')){x=START;lastX=x}auto=true;btn.textContent='⏸ Pause'};
+document.getElementById('flip').onclick=()=>{dirB=-dirB};
+document.getElementById('rst').onclick=()=>{dirB=1;auto=false;btn.textContent='▶ Start: Stab langsam nach rechts';x=140;n.value=1;b.value=10;a.value=90};
+function arrow(x1,y1,x2,y2,col,w=2.5){const d=Math.atan2(y2-y1,x2-x1);ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=w;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-9*Math.cos(d-.4),y2-9*Math.sin(d-.4));ctx.lineTo(x2-9*Math.cos(d+.4),y2-9*Math.sin(d+.4));ctx.closePath();ctx.fill()}
+function frame(t){
+ const dt=Math.max(1,t-lastT)/1000;lastT=t;
+ if(auto){x+=dt*(+document.getElementById('sp').value);if(x>=END){x=END;auto=false;btn.textContent='↻ Nochmal starten'}}
+ const v=(x-lastX)/dt;lastX=x;
+ vx+=(v-vx)*0.25;
+ const inside=x>gap.x1&&x<gap.x2;
+ const B=b.value/10,N=+n.value,ang=a.value*Math.PI/180;
+ const target=inside?-vx/40*B*Math.sin(ang)*N*0.5*dirB:0; // Vorzeichen: rechts -> vorne Mangel
+ smooth+=(target-smooth)*0.3;U=smooth;
+ document.getElementById('nv').textContent=N;document.getElementById('sv').textContent=document.getElementById('sp').value;I=Math.abs(U)/2;flow+=dt*I*140*(Math.sign(U)||1);
+ document.getElementById('bv').textContent=B.toFixed(1);
+ document.getElementById('av').textContent=a.value+'°';
+ draw(inside,B,N,ang);
+ info(inside,B,N);
+ requestAnimationFrame(frame)}
+function draw(inside,B,N,ang){
+ ctx.clearRect(0,0,W,H);
+ const tx=css('--tx'),mu=css('--mu');
+ const q=Math.max(-1,Math.min(1,U*.8));
+ // Magnet: Nord (rot) oben? wie im Arbeitsblatt: oben grün, unten rot
+ const topN=dirB<0;
+ ctx.fillStyle=topN?'#ef4444':'#22c55e';ctx.fillRect(gap.x1,gap.y1-60,gap.x2-gap.x1,60);
+ ctx.fillStyle=topN?'#22c55e':'#ef4444';ctx.fillRect(gap.x1,gap.y2,gap.x2-gap.x1,60);
+ ctx.fillStyle='#fff';ctx.font='bold 16px system-ui';ctx.textAlign='center';
+ ctx.fillText(topN?'Nordpol N':'Südpol S',(gap.x1+gap.x2)/2,gap.y1-24);ctx.fillText(topN?'Südpol S':'Nordpol N',(gap.x1+gap.x2)/2,gap.y2+36);
+ // Feldlinien (Punkte = aus der Ebene, hier Feld nach unten gezeichnet als Pfeile)
+ ctx.strokeStyle=css('--ac');ctx.globalAlpha=.55;
+ for(let fx=gap.x1+30;fx<gap.x2;fx+=50){(dirB>0?arrow(fx,gap.y2-14,fx,gap.y1+14,css('--ac'),1.5*B):arrow(fx,gap.y1+14,fx,gap.y2-14,css('--ac'),1.5*B))}
+ ctx.globalAlpha=1;
+ ctx.fillStyle=css('--ac');ctx.font='13px system-ui';ctx.textAlign='left';ctx.fillText('Magnetfeld B (von Nord nach Süd, '+(dirB>0?'nach oben':'nach unten')+')',gap.x1+6,gap.y2-18);
+ // Stab (Leiter) -- senkrecht zum Blatt, schräg gedreht
+ const mid=(gap.y1+gap.y2)/2,half=62;
+const ux=Math.sin(ang)*.75,uy=-(Math.sin(ang)*.5+Math.cos(ang)),nn=Math.hypot(ux,uy);
+const DX=.75/.9014,DY=-.5/.9014; // Tiefenrichtung (nach hinten)
+
+const topX=x+ux/nn*half,topY=mid+uy/nn*half,botX=x-ux/nn*half,botY=mid-uy/nn*half;
+ ctx.strokeStyle='#cbd5e1';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(topX,topY);ctx.lineTo(botX,botY);ctx.stroke();
+ // Drähte zum Voltmeter
+ const vmx=W/2,vmy=50;
+ const A=[[botX,botY],[botX,H-18],[60,H-18],[60,vmy],[vmx-34,vmy]];
+ const Bp=[[vmx,vmy-34],[vmx,18],[topX,18],[topX,topY]];
+ ctx.strokeStyle=tx;ctx.lineWidth=1.5;
+ for(const P of [A,Bp]){ctx.beginPath();ctx.moveTo(P[0][0],P[0][1]);for(const q of P.slice(1))ctx.lineTo(q[0],q[1]);ctx.stroke()}
+ // Strom: wandernde Elektronen im Draht
+ if(Math.abs(U)>.03){
+  for(const P of [A,Bp]){
+   let L=0;const seg=[];for(let i=1;i<P.length;i++){const l=Math.hypot(P[i][0]-P[i-1][0],P[i][1]-P[i-1][1]);seg.push(l);L+=l}
+   const gapd=34,cnt=Math.floor(L/gapd);
+   for(let k=0;k<cnt;k++){
+    let d=(((k*gapd+flow)%L)+L)%L,i=0;while(d>seg[i]){d-=seg[i];i++}
+    const f=d/seg[i],px=P[i][0]+(P[i+1][0]-P[i][0])*f,py=P[i][1]+(P[i+1][1]-P[i][1])*f;
+    ctx.fillStyle='#2563eb';ctx.beginPath();ctx.arc(px,py,5,0,7);ctx.fill();
+    ctx.fillStyle='#fff';ctx.font='bold 9px system-ui';ctx.textAlign='center';ctx.fillText('−',px,py+3);
+   }
+  }
+  ctx.fillStyle='#2563eb';ctx.font='bold 14px system-ui';ctx.textAlign='left';ctx.fillText('Strom I = '+(I*10).toFixed(1)+' mA',70,H-28);
+  ctx.font='12px system-ui';ctx.fillStyle=mu;ctx.fillText('Technische Stromrichtung: von + nach − (Elektronen entgegengesetzt)',70,H-46);
+ }
+ if(Math.abs(U)>.03){
+  const dd=U<0?1:-1,G='#16a34a';
+  for(const [P,i] of [[A,1],[Bp,1]]){
+   const mx=(P[i][0]+P[i+1][0])/2,my=(P[i][1]+P[i+1][1])/2;
+   const ux2=Math.sign(P[i+1][0]-P[i][0])*dd;
+   arrow(mx-ux2*14,my,mx+ux2*14,my,G,3.5);
+  }
+  const rl=Math.hypot(topX-botX,topY-botY),sgn=U<0?-1:1,ex2=sgn*(topX-botX)/rl,ey2=sgn*(topY-botY)/rl;
+  arrow(x-18-ex2*22,mid-ey2*22,x-18+ex2*30,mid+ey2*30,G,4);
+  ctx.fillStyle=G;ctx.font='bold 13px system-ui';ctx.textAlign='right';ctx.fillText('techn. Strom I (Mittelfinger)',x-26,mid+(U<0?52:-40));
+ }
+ // Elektronen
+ if(tg.checked){
+  const move=Math.abs(vx)>4&&inside;
+  const dir=vx>0?1:-1;
+  for(const f of el){
+   const t=Math.max(0,Math.min(1,f+(-q)*.3)),ex=botX+(topX-botX)*t,ey=botY+(topY-botY)*t;
+   ctx.fillStyle='#2563eb';ctx.beginPath();ctx.arc(ex,ey,7,0,7);ctx.fill();
+   ctx.fillStyle='#fff';ctx.font='bold 11px system-ui';ctx.textAlign='center';ctx.fillText('−',ex,ey+4);
+  }
+  if(move){ // Lorentzkraft auf Elektronen: nach hinten/vorne -> hier unten/oben im Bild
+   const sg=(vx>0?1:-1)*dirB; // rechts -> Kraft auf Elektronen nach hinten
+   const FL=(26+Math.min(34,Math.abs(vx)*.1)*B)*Math.max(.25,Math.sin(ang));arrow(x,mid,x+DX*sg*FL,mid+DY*sg*FL,'#dc2626',3);
+   ctx.fillStyle='#dc2626';ctx.textAlign='left';ctx.font='13px system-ui';ctx.fillText('Lorentzkraft F ('+(sg>0?'nach hinten':'nach vorne')+')',x+DX*sg*FL+(sg>0?8:-170),mid+DY*sg*FL+(sg>0?-4:16));
+  }
+  arrow(x,mid-90,x+(vx>0?1:-1)*Math.min(70,Math.abs(vx)*0.15),mid-90,'#f59e0b',3.5);
+  ctx.fillStyle=mu;ctx.textAlign='center';ctx.font='12px system-ui';ctx.fillText('Bewegung (Daumen)',x,mid-100);
+ }
+ // Ladungsanzeige an Stabenden
+ 
+ const mk=(px,py,s)=>{ctx.font='bold 18px system-ui';ctx.textAlign='center';ctx.fillStyle=s>0?'#dc2626':'#2563eb';ctx.fillText(s>0?'+':'−',px,py)};
+if(Math.abs(q)>.06){mk(topX+14,topY-6,q>0?1:-1);mk(botX-14,botY+16,q>0?-1:1)}
+ ctx.fillStyle=mu;ctx.font='12px system-ui';ctx.textAlign='left';ctx.fillText('hinten',topX+22,topY+2);ctx.textAlign='right';ctx.fillText('vorne',botX-22,botY+6);
+ // Voltmeter
+ ctx.fillStyle=css('--card');ctx.strokeStyle=tx;ctx.lineWidth=2;ctx.beginPath();ctx.arc(vmx,vmy,34,0,7);ctx.fill();ctx.stroke();
+ ctx.fillStyle=tx;ctx.font='bold 16px system-ui';ctx.textAlign='center';ctx.fillText('V',vmx,vmy+24);
+ const mx=Math.max(-1,Math.min(1,U/3));const th=-Math.PI/2+mx*1.0;
+ ctx.strokeStyle='#dc2626';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(vmx,vmy+8);ctx.lineTo(vmx+Math.cos(th)*26,vmy+8+Math.sin(th)*26);ctx.stroke();
+ ctx.fillStyle=mu;ctx.font='11px system-ui';ctx.fillText('Spannung',vmx+75,vmy+4);
+ ctx.fillStyle=tx;ctx.font='bold 14px system-ui';ctx.fillText(Math.abs(U).toFixed(2)+' V',vmx+75,vmy+22);
+}
+function info(inside,B,N){
+ const el=document.getElementById('info');
+ let s;
+ if(!inside) s='Der Stab ist <b>außerhalb des Magnetfelds</b>: Es wirkt keine Lorentzkraft, es entsteht keine Spannung.';
+ else if(Math.abs(vx)<5) s='Der Stab ruht im Magnetfeld: Keine Bewegung → <b>keine Induktionsspannung</b>.';
+ else{
+  const ang=+a.value;
+  s='Der Stab bewegt sich '+(vx>0?'nach rechts':'nach links')+': Auf die freien Elektronen wirkt die <b>Lorentzkraft</b>. Auf einer Seite entsteht Elektronenmangel (+), auf der anderen Elektronenüberschuss (−) → <b>Induktionsspannung U = '+Math.abs(U).toFixed(2)+' V</b>. Der Stromkreis ist geschlossen, deshalb fließt ein <b>Induktionsstrom</b>.';
+  s+=' Mit n = '+N+' Windungen wird die Spannung n‑fach.';
+  if(ang<90) s+=' <br>Der Stab ist schräg zum Feld (Winkel '+ang+'°): Nur der senkrechte Anteil zählt, die Spannung wird kleiner. Bei 0° entsteht keine Spannung.';
+ }
+ el.innerHTML=s;
+ const mv=inside&&Math.abs(vx)>=5;
+ const tf=U<0?'nach vorne':'nach hinten';
+ document.getElementById('uvw').innerHTML=
+ '<span style="color:#f59e0b">●</span> <b>Daumen = Ursache:</b> Bewegung des Leiters '+(Math.abs(vx)<5?'(steht still)':(vx>0?'nach rechts':'nach links'))+'<br>'+
+ '<span style="color:var(--ac)">●</span> <b>Zeigefinger = Vermittlung:</b> Magnetfeld '+(dirB>0?'nach oben (Nord unten, Süd oben)':'nach unten (Nord oben, Süd unten)')+'<br>'+
+ '<span style="color:#16a34a">●</span> <b>Mittelfinger = Wirkung:</b> technische Stromrichtung im Leiter '+(mv?tf:'– (keine Bewegung im Feld, kein Strom)')+
+ (mv?'<br>Die Elektronen werden entgegengesetzt, also '+(U<0?'nach hinten':'nach vorne')+', gedrängt.':'');}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
 
